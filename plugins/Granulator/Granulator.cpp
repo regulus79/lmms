@@ -35,6 +35,7 @@
 #include <QDomElement>
 
 #include <QDebug>
+#include "MixHelpers.h"
 
 
 namespace lmms
@@ -70,6 +71,10 @@ Plugin::Descriptor PLUGIN_EXPORT granulator_plugin_descriptor =
 Granulator::Granulator( InstrumentTrack * _instrument_track ) :
 	Instrument( _instrument_track, &granulator_plugin_descriptor ),
 	m_ampModel( 100, 0, 500, 1, this, tr( "Amplify" ) ),
+	m_grainSizeModel( 0.25, 0, 1, 0.0000001f, 1000.0f, this, tr( "Grain size" ) ),
+	m_grainPositionModel( 0, 0, 1, 0.0000001f, this, tr( "Grain start position" ) ),
+	m_spreadModel( 0, 0, 1, 0.0000001f, this, tr( "Spread" ) ),
+	m_numGrainsModel( 1, 1, 16, 1, this, tr( "Number of grains" ) ),
 	m_startPointModel( 0, 0, 1, 0.0000001f, this, tr( "Start of sample" ) ),
 	m_endPointModel( 1, 0, 1, 0.0000001f, this, tr( "End of sample" ) ),
 	m_loopPointModel( 0, 0, 1, 0.0000001f, this, tr( "Loopback point" ) ),
@@ -88,6 +93,14 @@ Granulator::Granulator( InstrumentTrack * _instrument_track ) :
 				this, SLOT( startPointChanged() ), Qt::DirectConnection );
 	connect( &m_endPointModel, SIGNAL( dataChanged() ),
 				this, SLOT( endPointChanged() ), Qt::DirectConnection );
+	connect( &m_grainSizeModel, SIGNAL( dataChanged() ),
+				this, SLOT( grainSizeChanged() ), Qt::DirectConnection );
+	connect( &m_grainPositionModel, SIGNAL( dataChanged() ),
+				this, SLOT( grainPositionChanged() ), Qt::DirectConnection );
+	connect( &m_spreadModel, SIGNAL( dataChanged() ),
+				this, SLOT( spreadChanged() ), Qt::DirectConnection );
+	connect( &m_numGrainsModel, SIGNAL( dataChanged() ),
+				this, SLOT( numGrainsChanged() ), Qt::DirectConnection );
 	connect( &m_loopPointModel, SIGNAL( dataChanged() ),
 				this, SLOT( loopPointChanged() ), Qt::DirectConnection );
 	connect( &m_stutterModel, SIGNAL( dataChanged() ),
@@ -102,29 +115,56 @@ Granulator::Granulator( InstrumentTrack * _instrument_track ) :
 	pointChanged();
 }
 
+int Granulator::getNewGrainStartFrame()
+{
+	// Max offset range goes from grainPos - spread/2 to grainPos + spread/2
+	int spread_frames = m_spreadModel.value() * (m_sample.endFrame() - m_sample.startFrame());
+	int random_offset = 0;
+	// Make sure not to modulo by 0
+	if (spread_frames>0){
+		random_offset = rand() % (spread_frames) - spread_frames/2;
+	}
+	int grain_position_frame = m_sample.startFrame() + m_grainPositionModel.value() * (m_sample.endFrame() - m_sample.startFrame());
+	return grain_position_frame + random_offset;
+}
 
+bool Granulator::addGrain( NotePlayHandle * _n, SampleFrame* _working_buffer, int grain_index, int grain_size, f_cnt_t grain_offset )
+{
+	const fpp_t frames = _n->framesLeftForCurrentPeriod();
+	const f_cnt_t offset = _n->noteOffset();
+	bool success1 = m_sample.play(_working_buffer + offset,
+						&static_cast<Sample::PlaybackState*>(_n->m_pluginData)[grain_index],
+						frames, _n->frequency(),
+						static_cast<Sample::Loop>(m_loopModel.value()));
+	bool success2 = true;
+	// is a new grain coming up? If so, then add on the start of the next grain to the end of the buffer.
+	int frames_since_press = _n->totalFramesPlayed() + grain_offset;
+	int frames_until_new_grain = grain_size - (frames_since_press % grain_size);
+	if (frames_until_new_grain<frames) {
+		// Time to pick new grain
+		static_cast<Sample::PlaybackState*>(_n->m_pluginData)[grain_index].setFrameIndex(getNewGrainStartFrame());
+		// Fill the end of the buffer with the new section of sample.
+		// This is necessary to maintain the correct spacing of grains. You can't just wait until the next period to start the new grain or the pitch will be wrong.
+		success2 = m_sample.play(_working_buffer + offset + frames_until_new_grain,
+						&static_cast<Sample::PlaybackState*>(_n->m_pluginData)[grain_index],
+						frames - frames_until_new_grain, _n->frequency(),
+						static_cast<Sample::Loop>(m_loopModel.value()));
+	}
+	// Set the amplitude given how far along the grain the current frame is
+	for (fpp_t f=0; f<frames; ++f){
+		float pos_in_grain = static_cast<float>((frames_since_press + f) % grain_size) / grain_size;
+		float amp = pos_in_grain < 0.5f? pos_in_grain : 1.0f - pos_in_grain;
+		_working_buffer[f] *= amp;
+	}
+	return success1 && success2;
+}
 
 
 void Granulator::playNote( NotePlayHandle * _n,
 						SampleFrame* _working_buffer )
 {
-	qDebug() << "[Granulator] " << "####### Play Note! #######";
-	qDebug() << "[Granulator] ampModel: " << m_ampModel.value();
-	qDebug() << "[Granulator] startPointModel: " << m_startPointModel.value();
-	qDebug() << "[Granulator] endPointModel: " << m_endPointModel.value();
-	qDebug() << "[Granulator] loopPointModel: " << m_loopPointModel.value();
-	qDebug() << "[Granulator] reverseModel: " << m_reverseModel.value();
-	qDebug() << "[Granulator] loopModel: " << m_loopModel.value();
-	qDebug() << "[Granulator] stutterModel: " << m_stutterModel.value();
-	qDebug() << "[Granulator] interpolationModel: " << m_interpolationModel.value();
 	const fpp_t frames = _n->framesLeftForCurrentPeriod();
 	const f_cnt_t offset = _n->noteOffset();
-	qDebug() << "[Granulator] frames: " << frames;
-	qDebug() << "[Granulator] working_buffer: " << _working_buffer;
-	qDebug() << "[Granulator] offset: " << offset;
-	qDebug() << "[Granulator] freq: " << _n->frequency();
-	qDebug() << "[Granulator] nextPlayStartPoint: " << m_nextPlayStartPoint;
-	qDebug() << "[Granulator] nextPlayBackwards: " << m_nextPlayBackwards;
 
 	// Magic key - a frequency < 20 (say, the bottom piano note if using
 	// a A4 base tuning) restarts the start point. The note is not actually
@@ -159,10 +199,20 @@ void Granulator::playNote( NotePlayHandle * _n,
 				srcmode = SRC_SINC_MEDIUM_QUALITY;
 				break;
 		}
-		_n->m_pluginData = new Sample::PlaybackState(_n->hasDetuningInfo(), srcmode);
-		// This look important TODO
-		static_cast<Sample::PlaybackState*>(_n->m_pluginData)->setFrameIndex(m_nextPlayStartPoint);
-		static_cast<Sample::PlaybackState*>(_n->m_pluginData)->setBackwards(m_nextPlayBackwards);
+		//_n->m_pluginData = new Sample::PlaybackState(_n->hasDetuningInfo(), srcmode);
+		// Max grain number is 16
+		Sample::PlaybackState* temp_array = new Sample::PlaybackState[16];
+		//std::array<Sample::PlaybackState*, 16> temp_array;
+		for (int g=0; g<16; ++g)
+		{
+			//temp_array[g] = new Sample::PlaybackState(_n->hasDetuningInfo(), srcmode);
+			temp_array[g].setFrameIndex(getNewGrainStartFrame());
+			temp_array[g].setBackwards(m_nextPlayBackwards);
+		}
+		_n->m_pluginData = temp_array;
+
+		//static_cast<Sample::PlaybackState*>(_n->m_pluginData)->setFrameIndex(getNewGrainStartFrame());
+		//static_cast<Sample::PlaybackState*>(_n->m_pluginData)->setBackwards(m_nextPlayBackwards);
 
 // debug code
 /*		qDebug( "frames %d", m_sample->frames() );
@@ -172,14 +222,41 @@ void Granulator::playNote( NotePlayHandle * _n,
 
 	if( ! _n->isFinished() )
 	{
-		if (m_sample.play(_working_buffer + offset,
-						static_cast<Sample::PlaybackState*>(_n->m_pluginData),
-						frames, _n->frequency(),
-						static_cast<Sample::Loop>(m_loopModel.value())))
+		// Pick a new grain if the current frame is about to cross over a multiple of grain_size
+		/*int grain_size = m_grainSizeModel.value() * m_sample.sampleRate();
+		int frames_since_press = _n->totalFramesPlayed();
+		if (frames_since_press == 0 || frames_since_press % grain_size > (frames_since_press + frames) % grain_size) {
+			// Time to pick new grain
+			// Max offset range goes from grainPos - spread/2 to grainPos + spread/2
+			int spread_frames = m_spreadModel.value() * (m_sample.endFrame() - m_sample.startFrame());
+			int random_offset = 0;
+			// Make sure not to modulo by 0
+			if (spread_frames>0){
+				random_offset = rand() % (spread_frames) - spread_frames/2;
+			}
+			int grain_position_frame = m_sample.startFrame() + m_grainPositionModel.value() * (m_sample.endFrame() - m_sample.startFrame());
+			int new_startframe = grain_position_frame + random_offset;
+			static_cast<Sample::PlaybackState*>(_n->m_pluginData)->setFrameIndex(new_startframe);
+		}*/
+		int grain_size = m_grainSizeModel.value() * m_sample.sampleRate();
+		grain_size = grain_size == 0? 0.00001f : grain_size;
+
+		bool success = true;
+		int num_grains = m_numGrainsModel.value();
+		for (int g=0; g<num_grains; ++g)
 		{
+			SampleFrame temporary_buffer[frames];
+			success = success && addGrain(_n, temporary_buffer, g, grain_size, static_cast<float>(g)/num_grains * grain_size);
+			MixHelpers::add(_working_buffer, temporary_buffer, frames);
+			//delete temporary_buffer;
+		}
+		MixHelpers::multiply(_working_buffer, 1.0f/num_grains, frames);
+		
+		if (success)
+		{
+
 			applyRelease( _working_buffer, _n );
-			emit isPlaying(static_cast<Sample::PlaybackState*>(_n->m_pluginData)->frameIndex());
-			qDebug() << "frame index:" << static_cast<Sample::PlaybackState*>(_n->m_pluginData)->frameIndex();
+			emit isPlaying(static_cast<Sample::PlaybackState*>(_n->m_pluginData)[0].frameIndex());
 		}
 		else
 		{
@@ -193,8 +270,8 @@ void Granulator::playNote( NotePlayHandle * _n,
 	}
 	if( m_stutterModel.value() == true )
 	{
-		m_nextPlayStartPoint = static_cast<Sample::PlaybackState*>(_n->m_pluginData)->frameIndex();
-		m_nextPlayBackwards = static_cast<Sample::PlaybackState*>(_n->m_pluginData)->backwards();
+		m_nextPlayStartPoint = static_cast<Sample::PlaybackState*>(_n->m_pluginData)[0].frameIndex();
+		m_nextPlayBackwards = static_cast<Sample::PlaybackState*>(_n->m_pluginData)[0].backwards();
 	}
 }
 
@@ -203,8 +280,7 @@ void Granulator::playNote( NotePlayHandle * _n,
 
 void Granulator::deleteNotePluginData( NotePlayHandle * _n )
 {
-	qDebug() << "Deleted note plugin data for some reason?";
-	delete static_cast<Sample::PlaybackState*>(_n->m_pluginData);
+	delete [] static_cast<Sample::PlaybackState*>(_n->m_pluginData);
 }
 
 
@@ -222,6 +298,10 @@ void Granulator::saveSettings(QDomDocument& doc, QDomElement& elem)
 	m_ampModel.saveSettings(doc, elem, "amp");
 	m_startPointModel.saveSettings(doc, elem, "sframe");
 	m_endPointModel.saveSettings(doc, elem, "eframe");
+	m_grainSizeModel.saveSettings(doc, elem, "grainsize");
+	m_grainPositionModel.saveSettings(doc, elem, "grainpos");
+	m_spreadModel.saveSettings(doc, elem, "spread");
+	m_numGrainsModel.saveSettings(doc, elem, "numgrains");
 	m_loopPointModel.saveSettings(doc, elem, "lframe");
 	m_stutterModel.saveSettings(doc, elem, "stutter");
 	m_interpolationModel.saveSettings(doc, elem, "interp");
@@ -249,6 +329,10 @@ void Granulator::loadSettings(const QDomElement& elem)
 	m_ampModel.loadSettings(elem, "amp");
 	m_endPointModel.loadSettings(elem, "eframe");
 	m_startPointModel.loadSettings(elem, "sframe");
+	m_grainSizeModel.loadSettings(elem, "grainsize");
+	m_grainPositionModel.loadSettings(elem, "grainpos");
+	m_spreadModel.loadSettings(elem, "spread");
+	m_numGrainsModel.loadSettings(elem, "numgrains");
 
 	// compat code for not having a separate loopback point
 	if (elem.hasAttribute("lframe") || !elem.firstChildElement("lframe").isNull())
@@ -405,6 +489,19 @@ void Granulator::endPointChanged()
 	// same as start, for now
 	startPointChanged();
 
+}
+
+void Granulator::grainSizeChanged()
+{
+}
+void Granulator::grainPositionChanged()
+{
+}
+void Granulator::spreadChanged()
+{
+}
+void Granulator::numGrainsChanged()
+{
 }
 
 void Granulator::loopPointChanged()

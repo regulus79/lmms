@@ -119,6 +119,22 @@ GranulatorView::GranulatorView(Instrument* instrument,
 	m_ampKnob->move(5, 108);
 	m_ampKnob->setHintText(tr("Amplify:"), "%");
 
+	m_grainSizeKnob = new TempoSyncKnob(KnobType::Bright26, this);
+	m_grainSizeKnob->move(5, 50);
+	m_grainSizeKnob->setHintText(tr("Grain Size:"), "s");
+
+	m_grainPositionKnob = new Knob(KnobType::Bright26, this);
+	m_grainPositionKnob->move(45, 50);
+	m_grainPositionKnob->setHintText(tr("Grain Position:"), "");
+
+	m_spreadKnob = new Knob(KnobType::Bright26, this);
+	m_spreadKnob->move(85, 50);
+	m_spreadKnob->setHintText(tr("Spread:"), "");
+
+	m_numGrainsKnob = new Knob(KnobType::Bright26, this);
+	m_numGrainsKnob->move(110, 50);
+	m_numGrainsKnob->setHintText(tr("Number of grains:"), "");
+
 	m_startKnob = new GranulatorWaveView::knob(this);
 	m_startKnob->move(45, 108);
 	m_startKnob->setHintText(tr("Start point:"), "");
@@ -270,6 +286,10 @@ void GranulatorView::modelChanged()
 	auto a = castModel<Granulator>();
 	connect(a, &Granulator::sampleUpdated, this, &GranulatorView::sampleUpdated);
 	m_ampKnob->setModel(&a->ampModel());
+	m_grainSizeKnob->setModel(&a->grainSizeModel());
+	m_grainPositionKnob->setModel(&a->grainPositionModel());
+	m_spreadKnob->setModel(&a->spreadModel());
+	m_numGrainsKnob->setModel(&a->numGrainsModel());
 	m_startKnob->setModel(&a->startPointModel());
 	m_endKnob->setModel(&a->endPointModel());
 	m_loopKnob->setModel(&a->loopPointModel());
