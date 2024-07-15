@@ -222,9 +222,9 @@ void Granulator::playNote( NotePlayHandle * _n,
 
 		bool success = true;
 		int num_grains = m_numGrainsModel.value();
-		for (int g=0; g<num_grains; ++g)
+		for (int g = 0; g < num_grains; g++)
 		{
-			SampleFrame temporary_buffer[frames];
+			SampleFrame* temporary_buffer = new SampleFrame[frames];
 			success = success && addGrain(_n, temporary_buffer, g, grain_size, static_cast<float>(g)/num_grains * grain_size);
 			qDebug() << "Working buffer:" << _working_buffer;
 			qDebug() << "Temporary buffer:" << temporary_buffer;
