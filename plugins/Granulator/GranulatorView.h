@@ -1,5 +1,5 @@
 /*
- * GranulatorView.h - View of the AFP
+ * GranulatorView.h - View of the Granulator; originally AudioFileProcessorView.h, but edited by Regulus to be a granular synth.
  *
  * Copyright (c) 2004-2014 Tobias Doerffel <tobydox/at/users.sourceforge.net>
  *
@@ -26,6 +26,7 @@
 #define LMMS_GRANULATOR_VIEW_H
 
 #include "InstrumentView.h"
+#include "TempoSyncKnob.h"
 
 
 namespace lmms
@@ -67,6 +68,10 @@ private:
 private:
 	GranulatorWaveView* m_waveView;
 	Knob* m_ampKnob;
+	TempoSyncKnob* m_grainSizeKnob;
+	Knob* m_grainPositionKnob;
+	Knob* m_spreadKnob;
+	Knob* m_numGrainsKnob;
 	Knob* m_startKnob;
 	Knob* m_endKnob;
 	Knob* m_loopKnob;

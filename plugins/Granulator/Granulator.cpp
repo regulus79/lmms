@@ -1,5 +1,5 @@
 /*
- * Granulator.cpp - instrument for using audio files
+ * Granulator.cpp - originally AudioFileProcessor.cpp, but edited by Regulus to be a granular synth.
  *
  * Copyright (c) 2004-2014 Tobias Doerffel <tobydox/at/users.sourceforge.net>
  *
@@ -132,10 +132,12 @@ bool Granulator::addGrain( NotePlayHandle * _n, SampleFrame* _working_buffer, in
 {
 	const fpp_t frames = _n->framesLeftForCurrentPeriod();
 	const f_cnt_t offset = _n->noteOffset();
+	// First fill the buffer with the whole grain sample
 	bool success1 = m_sample.play(_working_buffer + offset,
 						&static_cast<Sample::PlaybackState*>(_n->m_pluginData)[grain_index],
 						frames, _n->frequency(),
 						static_cast<Sample::Loop>(m_loopModel.value()));
+
 	bool success2 = true;
 	// is a new grain coming up? If so, then add on the start of the next grain to the end of the buffer.
 	int frames_since_press = _n->totalFramesPlayed() + grain_offset;
@@ -144,13 +146,13 @@ bool Granulator::addGrain( NotePlayHandle * _n, SampleFrame* _working_buffer, in
 		// Time to pick new grain
 		static_cast<Sample::PlaybackState*>(_n->m_pluginData)[grain_index].setFrameIndex(getNewGrainStartFrame());
 		// Fill the end of the buffer with the new section of sample.
-		// This is necessary to maintain the correct spacing of grains. You can't just wait until the next period to start the new grain or the pitch will be wrong.
+		// This is necessary to maintain the correct spacing of grains.
 		success2 = m_sample.play(_working_buffer + offset + frames_until_new_grain,
 						&static_cast<Sample::PlaybackState*>(_n->m_pluginData)[grain_index],
 						frames - frames_until_new_grain, _n->frequency(),
 						static_cast<Sample::Loop>(m_loopModel.value()));
 	}
-	// Set the amplitude given how far along the grain the current frame is
+	// Make the grain fade in and out to prevent sharp discontinuities: 0% volume at start and end, but 100% in the middle.
 	for (fpp_t f=0; f<frames; ++f){
 		float pos_in_grain = static_cast<float>((frames_since_press + f) % grain_size) / grain_size;
 		float amp = pos_in_grain < 0.5f? pos_in_grain : 1.0f - pos_in_grain;
@@ -163,6 +165,8 @@ bool Granulator::addGrain( NotePlayHandle * _n, SampleFrame* _working_buffer, in
 void Granulator::playNote( NotePlayHandle * _n,
 						SampleFrame* _working_buffer )
 {
+	qDebug() << "Working buffer at start:" << _working_buffer;
+
 	const fpp_t frames = _n->framesLeftForCurrentPeriod();
 	const f_cnt_t offset = _n->noteOffset();
 
@@ -199,46 +203,21 @@ void Granulator::playNote( NotePlayHandle * _n,
 				srcmode = SRC_SINC_MEDIUM_QUALITY;
 				break;
 		}
-		//_n->m_pluginData = new Sample::PlaybackState(_n->hasDetuningInfo(), srcmode);
+		// Initialize the PlaybackStates, one for each grain
 		// Max grain number is 16
 		Sample::PlaybackState* temp_array = new Sample::PlaybackState[16];
-		//std::array<Sample::PlaybackState*, 16> temp_array;
 		for (int g=0; g<16; ++g)
 		{
-			//temp_array[g] = new Sample::PlaybackState(_n->hasDetuningInfo(), srcmode);
 			temp_array[g].setFrameIndex(getNewGrainStartFrame());
 			temp_array[g].setBackwards(m_nextPlayBackwards);
 		}
 		_n->m_pluginData = temp_array;
-
-		//static_cast<Sample::PlaybackState*>(_n->m_pluginData)->setFrameIndex(getNewGrainStartFrame());
-		//static_cast<Sample::PlaybackState*>(_n->m_pluginData)->setBackwards(m_nextPlayBackwards);
-
-// debug code
-/*		qDebug( "frames %d", m_sample->frames() );
-		qDebug( "startframe %d", m_sample->startFrame() );
-		qDebug( "nextPlayStartPoint %d", m_nextPlayStartPoint );*/
 	}
 
 	if( ! _n->isFinished() )
 	{
-		// Pick a new grain if the current frame is about to cross over a multiple of grain_size
-		/*int grain_size = m_grainSizeModel.value() * m_sample.sampleRate();
-		int frames_since_press = _n->totalFramesPlayed();
-		if (frames_since_press == 0 || frames_since_press % grain_size > (frames_since_press + frames) % grain_size) {
-			// Time to pick new grain
-			// Max offset range goes from grainPos - spread/2 to grainPos + spread/2
-			int spread_frames = m_spreadModel.value() * (m_sample.endFrame() - m_sample.startFrame());
-			int random_offset = 0;
-			// Make sure not to modulo by 0
-			if (spread_frames>0){
-				random_offset = rand() % (spread_frames) - spread_frames/2;
-			}
-			int grain_position_frame = m_sample.startFrame() + m_grainPositionModel.value() * (m_sample.endFrame() - m_sample.startFrame());
-			int new_startframe = grain_position_frame + random_offset;
-			static_cast<Sample::PlaybackState*>(_n->m_pluginData)->setFrameIndex(new_startframe);
-		}*/
 		int grain_size = m_grainSizeModel.value() * m_sample.sampleRate();
+		// Disallow 0 grain size
 		grain_size = grain_size == 0? 0.00001f : grain_size;
 
 		bool success = true;
@@ -247,9 +226,12 @@ void Granulator::playNote( NotePlayHandle * _n,
 		{
 			SampleFrame temporary_buffer[frames];
 			success = success && addGrain(_n, temporary_buffer, g, grain_size, static_cast<float>(g)/num_grains * grain_size);
+			qDebug() << "Working buffer:" << _working_buffer;
+			qDebug() << "Temporary buffer:" << temporary_buffer;
+			qDebug() << "frames:" << frames;
 			MixHelpers::add(_working_buffer, temporary_buffer, frames);
-			//delete temporary_buffer;
 		}
+		// Normalize the volume of the output buffer. TODO: This doesn't sound right for some reason; I may be misunderstanding how volume works...?
 		MixHelpers::multiply(_working_buffer, 1.0f/num_grains, frames);
 		
 		if (success)

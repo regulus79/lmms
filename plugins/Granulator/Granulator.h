@@ -1,6 +1,6 @@
 /*
  * Granulator.h - declaration of class Granulator
- *                          (instrument-plugin for using audio-files)
+ *                          originally AudioFileProcessor, but edited by Regulus to be a granular synth.
  *
  * Copyright (c) 2004-2014 Tobias Doerffel <tobydox/at/users.sourceforge.net>
  *
@@ -29,6 +29,7 @@
 
 #include "AutomatableModel.h"
 #include "ComboBoxModel.h"
+#include "TempoSyncKnobModel.h"
 
 #include "Instrument.h"
 #include "Sample.h"
@@ -42,6 +43,9 @@ class Granulator : public Instrument
 	Q_OBJECT
 public:
 	Granulator( InstrumentTrack * _instrument_track );
+
+	int getNewGrainStartFrame();
+	bool addGrain( NotePlayHandle * _n, SampleFrame* _working_buffer, int grain_index, int grain_size, f_cnt_t grain_offset );
 
 	void playNote( NotePlayHandle * _n,
 						SampleFrame* _working_buffer ) override;
@@ -66,6 +70,10 @@ public:
 	Sample const & sample() const { return m_sample; }
 
 	FloatModel & ampModel() { return m_ampModel; }
+	TempoSyncKnobModel & grainSizeModel() { return m_grainSizeModel; }
+	FloatModel & grainPositionModel() { return m_grainPositionModel; }
+	FloatModel & spreadModel() { return m_spreadModel; }
+	FloatModel & numGrainsModel() { return m_numGrainsModel; }
 	FloatModel & startPointModel() { return m_startPointModel; }
 	FloatModel & endPointModel() { return m_endPointModel; }
 	FloatModel & loopPointModel() { return m_loopPointModel; }
@@ -81,6 +89,10 @@ public slots:
 private slots:
 	void reverseModelChanged();
 	void ampModelChanged();
+	void grainSizeChanged();
+	void grainPositionChanged();
+	void spreadChanged();
+	void numGrainsChanged();
 	void loopPointChanged();
 	void startPointChanged();
 	void endPointChanged();
@@ -96,6 +108,10 @@ private:
 	Sample m_sample;
 
 	FloatModel m_ampModel;
+	TempoSyncKnobModel m_grainSizeModel;
+	FloatModel m_grainPositionModel;
+	FloatModel m_spreadModel;
+	FloatModel m_numGrainsModel;
 	FloatModel m_startPointModel;
 	FloatModel m_endPointModel;
 	FloatModel m_loopPointModel;

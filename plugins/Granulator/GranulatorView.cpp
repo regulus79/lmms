@@ -1,5 +1,5 @@
 /*
- * Granulator.cpp - instrument for using audio files
+ * GranulatorView.cpp - originally AudioFileProcessorView.cpp, but edited by Regulus to be a granular synth.
  *
  * Copyright (c) 2004-2014 Tobias Doerffel <tobydox/at/users.sourceforge.net>
  *
