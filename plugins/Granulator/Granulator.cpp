@@ -36,6 +36,7 @@
 
 #include <QDebug>
 #include "MixHelpers.h"
+#include "math.h"
 
 
 namespace lmms
@@ -156,7 +157,7 @@ bool Granulator::addGrain( NotePlayHandle * _n, SampleFrame* _working_buffer, in
 	for (fpp_t f=0; f<frames; ++f){
 		float pos_in_grain = static_cast<float>((frames_since_press + f) % grain_size) / grain_size;
 		float amp = pos_in_grain < 0.5f? pos_in_grain : 1.0f - pos_in_grain;
-		_working_buffer[f] *= amp;
+		_working_buffer[f] *= sqrt(amp);
 	}
 	return success1 && success2;
 }
@@ -204,6 +205,7 @@ void Granulator::playNote( NotePlayHandle * _n,
 		}
 		// Initialize the PlaybackStates, one for each grain
 		// Max grain number is 16
+		// NOTE: This is not optimal. Currently, no constructor is explicitly called for each of the PlaybackStates, meaning that `srcmode` is unused.
 		Sample::PlaybackState* temp_array = new Sample::PlaybackState[16];
 		for (int g=0; g<16; ++g)
 		{
@@ -228,7 +230,7 @@ void Granulator::playNote( NotePlayHandle * _n,
 			MixHelpers::add(_working_buffer, temporary_buffer, frames);
 		}
 		// Normalize the volume of the output buffer. TODO: This doesn't sound right for some reason; I may be misunderstanding how volume works...?
-		MixHelpers::multiply(_working_buffer, 1.0f/num_grains, frames);
+		MixHelpers::multiply(_working_buffer, 1.0f/sqrt(num_grains), frames);
 		
 		if (success)
 		{
