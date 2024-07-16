@@ -132,10 +132,6 @@ bool Granulator::addGrain( NotePlayHandle * _n, SampleFrame* _working_buffer, in
 {
 	const fpp_t frames = _n->framesLeftForCurrentPeriod();
 	const f_cnt_t offset = _n->noteOffset();
-	qDebug() << "offset in addGrain:" << offset;
-	qDebug() << "frames in addGrain:" << frames;
-	qDebug() << "Working buffer in addGrain:" << _working_buffer;
-	qDebug() << "Working buffer + offset in addGrain:" << _working_buffer + offset;
 	// First fill the buffer with the whole grain sample
 	bool success1 = m_sample.play(_working_buffer + offset,
 						&static_cast<Sample::PlaybackState*>(_n->m_pluginData)[grain_index],
@@ -169,11 +165,9 @@ bool Granulator::addGrain( NotePlayHandle * _n, SampleFrame* _working_buffer, in
 void Granulator::playNote( NotePlayHandle * _n,
 						SampleFrame* _working_buffer )
 {
-	qDebug() << "Working buffer at start:" << _working_buffer;
 
 	const fpp_t frames = _n->framesLeftForCurrentPeriod();
 	const f_cnt_t offset = _n->noteOffset();
-	qDebug() << "offset at start:" << offset;
 
 	// Magic key - a frequency < 20 (say, the bottom piano note if using
 	// a A4 base tuning) restarts the start point. The note is not actually
@@ -231,10 +225,6 @@ void Granulator::playNote( NotePlayHandle * _n,
 		{
 			SampleFrame* temporary_buffer = new SampleFrame[256];
 			success = success && addGrain(_n, temporary_buffer, g, grain_size, static_cast<float>(g)/num_grains * grain_size);
-			qDebug() << "Working buffer:" << _working_buffer;
-			qDebug() << "Temporary buffer:" << temporary_buffer;
-			qDebug() << "Temporary buffer[0]:" << temporary_buffer[0].left() << temporary_buffer[0].right();
-			qDebug() << "frames:" << frames;
 			MixHelpers::add(_working_buffer, temporary_buffer, frames);
 		}
 		// Normalize the volume of the output buffer. TODO: This doesn't sound right for some reason; I may be misunderstanding how volume works...?
@@ -248,7 +238,6 @@ void Granulator::playNote( NotePlayHandle * _n,
 		}
 		else
 		{
-			qDebug() << "Failed???!!!";
 			zeroSampleFrames(_working_buffer, frames + offset);
 			emit isPlaying( 0 );
 		}
