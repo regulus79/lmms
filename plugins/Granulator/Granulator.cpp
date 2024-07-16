@@ -218,7 +218,7 @@ void Granulator::playNote( NotePlayHandle * _n,
 	{
 		int grain_size = m_grainSizeModel.value() * m_sample.sampleRate();
 		// Disallow 0 grain size
-		grain_size = grain_size == 0? 0.00001f : grain_size;
+		grain_size = grain_size == 0? 1 : grain_size;
 
 		bool success = true;
 		int num_grains = m_numGrainsModel.value();
