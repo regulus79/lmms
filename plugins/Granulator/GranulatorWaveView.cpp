@@ -209,7 +209,7 @@ void GranulatorWaveView::paintEvent(QPaintEvent * pe)
 						double(graph_rect.width()) / frames;
 
 	// loop point line
-	p.setPen(QColor(0x7F, 0xFF, 0xFF)); //TODO: put into a qproperty
+	p.setPen(QColor(0xFF, 0x7F, 0x7F)); //TODO: put into a qproperty
 	p.drawLine(m_loopFrameX, graph_rect.y(),
 					m_loopFrameX,
 					graph_rect.height() + graph_rect.y());
@@ -231,7 +231,7 @@ void GranulatorWaveView::paintEvent(QPaintEvent * pe)
 			graph_rect.y(),
 			m_endFrameX - m_startFrameX - 1,
 			graph_rect.height() + graph_rect.y(),
-			QColor(95, 175, 255, 50) //TODO: put into a qproperty
+			QColor(200, 0, 0, 50) //TODO: put into a qproperty
 		);
 		if (m_endFrameX - m_loopFrameX > 2)
 			p.fillRect(
@@ -239,13 +239,13 @@ void GranulatorWaveView::paintEvent(QPaintEvent * pe)
 				graph_rect.y(),
 				m_endFrameX - m_loopFrameX - 1,
 				graph_rect.height() + graph_rect.y(),
-				QColor(95, 205, 255, 65) //TODO: put into a qproperty
+				QColor(200, 100, 100, 65) //TODO: put into a qproperty
 		);
 
 		if (m_framesPlayed && m_animation)
 		{
 			QLinearGradient g(m_startFrameX, 0, played_width_px, 0);
-			const QColor c(0, 120, 255, 180); //TODO: put into a qproperty
+			const QColor c(255, 120, 120, 180); //TODO: put into a qproperty
 			g.setColorAt(0, Qt::transparent);
 			g.setColorAt(0.8, c);
 			g.setColorAt(1,  c);
@@ -268,7 +268,7 @@ void GranulatorWaveView::paintEvent(QPaintEvent * pe)
 	}
 
 	QLinearGradient g(0, 0, width() * 0.7, 0);
-	const QColor c(16, 111, 170, 180);
+	const QColor c(170, 111, 111, 180);
 	g.setColorAt(0, c);
 	g.setColorAt(0.4, c);
 	g.setColorAt(1,  Qt::transparent);

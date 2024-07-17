@@ -52,7 +52,7 @@ GranulatorView::GranulatorView(Instrument* instrument,
 {
 	m_openAudioFileButton = new PixmapButton(this);
 	m_openAudioFileButton->setCursor(QCursor(Qt::PointingHandCursor));
-	m_openAudioFileButton->move(227, 72);
+	m_openAudioFileButton->move(227, 95);
 	m_openAudioFileButton->setActiveGraphic(PLUGIN_NAME::getIconPixmap(
 							"select_file"));
 	m_openAudioFileButton->setInactiveGraphic(PLUGIN_NAME::getIconPixmap(
@@ -63,7 +63,7 @@ GranulatorView::GranulatorView(Instrument* instrument,
 
 	m_reverseButton = new PixmapButton(this);
 	m_reverseButton->setCheckable(true);
-	m_reverseButton->move(164, 105);
+	m_reverseButton->move(164, 105+25);
 	m_reverseButton->setActiveGraphic(PLUGIN_NAME::getIconPixmap(
 							"reverse_on"));
 	m_reverseButton->setInactiveGraphic(PLUGIN_NAME::getIconPixmap(
@@ -74,7 +74,7 @@ GranulatorView::GranulatorView(Instrument* instrument,
 
 	auto m_loopOffButton = new PixmapButton(this);
 	m_loopOffButton->setCheckable(true);
-	m_loopOffButton->move(190, 105);
+	m_loopOffButton->move(190, 105+25);
 	m_loopOffButton->setActiveGraphic(PLUGIN_NAME::getIconPixmap(
 							"loop_off_on"));
 	m_loopOffButton->setInactiveGraphic(PLUGIN_NAME::getIconPixmap(
@@ -83,7 +83,7 @@ GranulatorView::GranulatorView(Instrument* instrument,
 
 	auto m_loopOnButton = new PixmapButton(this);
 	m_loopOnButton->setCheckable(true);
-	m_loopOnButton->move(190, 124);
+	m_loopOnButton->move(190, 124+25);
 	m_loopOnButton->setActiveGraphic(PLUGIN_NAME::getIconPixmap(
 							"loop_on_on"));
 	m_loopOnButton->setInactiveGraphic(PLUGIN_NAME::getIconPixmap(
@@ -92,7 +92,7 @@ GranulatorView::GranulatorView(Instrument* instrument,
 
 	auto m_loopPingPongButton = new PixmapButton(this);
 	m_loopPingPongButton->setCheckable(true);
-	m_loopPingPongButton->move(216, 124);
+	m_loopPingPongButton->move(216, 124+25);
 	m_loopPingPongButton->setActiveGraphic(PLUGIN_NAME::getIconPixmap(
 							"loop_pingpong_on"));
 	m_loopPingPongButton->setInactiveGraphic(PLUGIN_NAME::getIconPixmap(
@@ -106,7 +106,7 @@ GranulatorView::GranulatorView(Instrument* instrument,
 
 	m_stutterButton = new PixmapButton(this);
 	m_stutterButton->setCheckable(true);
-	m_stutterButton->move(164, 124);
+	m_stutterButton->move(164, 124+25);
 	m_stutterButton->setActiveGraphic(PLUGIN_NAME::getIconPixmap(
 								"stutter_on"));
 	m_stutterButton->setInactiveGraphic(PLUGIN_NAME::getIconPixmap(
@@ -116,48 +116,48 @@ GranulatorView::GranulatorView(Instrument* instrument,
 
 	m_ampKnob = new Knob(KnobType::Bright26, this);
 	m_ampKnob->setVolumeKnob(true);
-	m_ampKnob->move(5, 108);
+	m_ampKnob->move(10, 138);
 	m_ampKnob->setHintText(tr("Amplify:"), "%");
 
 	m_grainSizeKnob = new TempoSyncKnob(KnobType::Bright26, this);
-	m_grainSizeKnob->move(5, 50);
+	m_grainSizeKnob->move(10, 10);
 	m_grainSizeKnob->setHintText(tr("Grain Size:"), "s");
 
 	m_grainPositionKnob = new Knob(KnobType::Bright26, this);
-	m_grainPositionKnob->move(45, 50);
+	m_grainPositionKnob->move(45, 10);
 	m_grainPositionKnob->setHintText(tr("Grain Position:"), "");
 
 	m_spreadKnob = new Knob(KnobType::Bright26, this);
-	m_spreadKnob->move(85, 50);
+	m_spreadKnob->move(45, 45);
 	m_spreadKnob->setHintText(tr("Spread:"), "");
 
 	m_numGrainsKnob = new Knob(KnobType::Bright26, this);
-	m_numGrainsKnob->move(110, 50);
+	m_numGrainsKnob->move(10, 45);
 	m_numGrainsKnob->setHintText(tr("Number of grains:"), "");
 
 	m_scanRateKnob = new Knob(KnobType::Bright26, this);
-	m_scanRateKnob->move(110, 25);
+	m_scanRateKnob->move(10, 80);
 	m_scanRateKnob->setHintText(tr("Scan Rate:"), "");
 
 	m_widthKnob = new Knob(KnobType::Bright26, this);
-	m_widthKnob->move(85, 25);
+	m_widthKnob->move(45, 80);
 	m_widthKnob->setHintText(tr("Width:"), "%");
 
 	m_startKnob = new GranulatorWaveView::knob(this);
-	m_startKnob->move(45, 108);
+	m_startKnob->move(45, 138);
 	m_startKnob->setHintText(tr("Start point:"), "");
 
 	m_endKnob = new GranulatorWaveView::knob(this);
-	m_endKnob->move(125, 108);
+	m_endKnob->move(125, 138);
 	m_endKnob->setHintText(tr("End point:"), "");
 
 	m_loopKnob = new GranulatorWaveView::knob(this);
-	m_loopKnob->move(85, 108);
+	m_loopKnob->move(85, 138);
 	m_loopKnob->setHintText(tr("Loopback point:"), "");
 
 // interpolation selector
 	m_interpBox = new ComboBox(this);
-	m_interpBox->setGeometry(142, 62, 82, ComboBox::DEFAULT_HEIGHT);
+	m_interpBox->setGeometry(142, 82+5, 82, ComboBox::DEFAULT_HEIGHT);
 
 // wavegraph
 	m_waveView = 0;
@@ -269,7 +269,7 @@ void GranulatorView::paintEvent(QPaintEvent*)
 	}
 
 	p.setPen(QColor(255, 255, 255));
-	p.drawText(8, 99, file_name);
+	p.drawText(8, 122, file_name);
 }
 
 void GranulatorView::sampleUpdated()
