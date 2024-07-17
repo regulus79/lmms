@@ -76,6 +76,8 @@ Granulator::Granulator( InstrumentTrack * _instrument_track ) :
 	m_grainPositionModel( 0, 0, 1, 0.0000001f, this, tr( "Grain start position" ) ),
 	m_spreadModel( 0, 0, 1, 0.0000001f, this, tr( "Spread" ) ),
 	m_numGrainsModel( 1, 1, 16, 1, this, tr( "Number of grains" ) ),
+	m_scanRateModel( 0, 0, 10, 0.0000001f, this, tr( "Scan rate" ) ),
+	m_widthModel( 0, 0, 100, 0.0000001f, this, tr( "Width" ) ),
 	m_startPointModel( 0, 0, 1, 0.0000001f, this, tr( "Start of sample" ) ),
 	m_endPointModel( 1, 0, 1, 0.0000001f, this, tr( "End of sample" ) ),
 	m_loopPointModel( 0, 0, 1, 0.0000001f, this, tr( "Loopback point" ) ),
@@ -116,20 +118,27 @@ Granulator::Granulator( InstrumentTrack * _instrument_track ) :
 	pointChanged();
 }
 
-int Granulator::getNewGrainStartFrame()
+int Granulator::getNewGrainStartFrame( NotePlayHandle * _n )
 {
+	//int grain_size = std::max(1, static_cast<int>(m_grainSizeModel.value() * m_sample.sampleRate()));
 	// Max offset range goes from grainPos - spread/2 to grainPos + spread/2
+	// The spread knob probably be changed to be in terms of second; that would be more intuative.
 	int spread_frames = m_spreadModel.value() * (m_sample.endFrame() - m_sample.startFrame());
 	int random_offset = 0;
 	// Make sure not to modulo by 0
 	if (spread_frames>0){
 		random_offset = rand() % (spread_frames) - spread_frames/2;
 	}
-	int grain_position_frame = m_sample.startFrame() + m_grainPositionModel.value() * (m_sample.endFrame() - m_sample.startFrame());
-	return grain_position_frame + random_offset;
+	// If the user has the scan rate > 0, then the base grain position will need to be shifted proportional to the amount of time passed.
+	int scan_offset = m_scanRateModel.value() * _n->totalFramesPlayed();
+	int grain_position_frame = m_sample.startFrame() + scan_offset + m_grainPositionModel.value() * (m_sample.endFrame() - m_sample.startFrame());
+	int final_grain_pos = grain_position_frame + random_offset;
+	// Quantize the grain pos so that it lies on a multiple of the grain size (TODO: make this optional)
+	//final_grain_pos -= final_grain_pos % grain_size;
+	return final_grain_pos;
 }
 
-bool Granulator::addGrain( NotePlayHandle * _n, SampleFrame* _working_buffer, int grain_index, int grain_size, f_cnt_t grain_offset )
+bool Granulator::addGrain( NotePlayHandle * _n, SampleFrame* _working_buffer, int grain_index, int grain_size, f_cnt_t grain_offset, float panning )
 {
 	const fpp_t frames = _n->framesLeftForCurrentPeriod();
 	const f_cnt_t offset = _n->noteOffset();
@@ -145,7 +154,7 @@ bool Granulator::addGrain( NotePlayHandle * _n, SampleFrame* _working_buffer, in
 	int frames_until_new_grain = grain_size - (frames_since_press % grain_size);
 	if (frames_until_new_grain<frames) {
 		// Time to pick new grain
-		static_cast<Sample::PlaybackState*>(_n->m_pluginData)[grain_index].setFrameIndex(getNewGrainStartFrame());
+		static_cast<Sample::PlaybackState*>(_n->m_pluginData)[grain_index].setFrameIndex(getNewGrainStartFrame(_n));
 		// Fill the end of the buffer with the new section of sample.
 		// This is necessary to maintain the correct spacing of grains.
 		success2 = m_sample.play(_working_buffer + offset + frames_until_new_grain,
@@ -154,10 +163,13 @@ bool Granulator::addGrain( NotePlayHandle * _n, SampleFrame* _working_buffer, in
 						static_cast<Sample::Loop>(m_loopModel.value()));
 	}
 	// Make the grain fade in and out to prevent sharp discontinuities: 0% volume at start and end, but 100% in the middle.
+	// Also might as well apply the panning in the loop
 	for (fpp_t f=0; f<frames; ++f){
 		float pos_in_grain = static_cast<float>((frames_since_press + f) % grain_size) / grain_size;
 		float amp = pos_in_grain < 0.5f? pos_in_grain : 1.0f - pos_in_grain;
-		_working_buffer[f] *= sqrt(amp);
+		float panLeft = std::min(1.0f, 1.0f - panning);
+		float panRight= std::min(1.0f, 1.0f + panning);
+		_working_buffer[f] = SampleFrame( _working_buffer[f].left() * sqrt(amp) * panLeft, _working_buffer[f].right() * sqrt(amp) * panRight );
 	}
 	return success1 && success2;
 }
@@ -209,7 +221,7 @@ void Granulator::playNote( NotePlayHandle * _n,
 		Sample::PlaybackState* temp_array = new Sample::PlaybackState[16];
 		for (int g=0; g<16; ++g)
 		{
-			temp_array[g].setFrameIndex(getNewGrainStartFrame());
+			temp_array[g].setFrameIndex(getNewGrainStartFrame(_n));
 			temp_array[g].setBackwards(m_nextPlayBackwards);
 		}
 		_n->m_pluginData = temp_array;
@@ -217,16 +229,16 @@ void Granulator::playNote( NotePlayHandle * _n,
 
 	if( ! _n->isFinished() )
 	{
-		int grain_size = m_grainSizeModel.value() * m_sample.sampleRate();
-		// Disallow 0 grain size
-		grain_size = grain_size == 0? 1 : grain_size;
+		int grain_size = std::max(1, static_cast<int>(m_grainSizeModel.value() * m_sample.sampleRate()));
 
 		bool success = true;
 		int num_grains = m_numGrainsModel.value();
 		for (int g = 0; g < num_grains; g++)
 		{
 			SampleFrame* temporary_buffer = new SampleFrame[256];
-			success = success && addGrain(_n, temporary_buffer, g, grain_size, static_cast<float>(g)/num_grains * grain_size);
+			// Make every other grain be panned left vs right. Perhaps not the best way to do it, but for even number of grains it should work well.
+			float panning = g%2==0 ? m_widthModel.value()/100 : -m_widthModel.value()/100;
+			success = success && addGrain(_n, temporary_buffer, g, grain_size, static_cast<float>(g)/num_grains * grain_size, panning);
 			MixHelpers::add(_working_buffer, temporary_buffer, frames);
 		}
 		// Normalize the volume of the output buffer. TODO: This doesn't sound right for some reason; I may be misunderstanding how volume works...?
