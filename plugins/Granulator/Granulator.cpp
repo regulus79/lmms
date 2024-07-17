@@ -135,7 +135,8 @@ int Granulator::getNewGrainStartFrame( NotePlayHandle * _n )
 	int final_grain_pos = grain_position_frame + random_offset;
 	// Quantize the grain pos so that it lies on a multiple of the grain size (TODO: make this optional)
 	//final_grain_pos -= final_grain_pos % grain_size;
-	return std::clamp(final_grain_pos, m_sample.startFrame(), m_sample.endFrame() - grain_size);
+	// Only clamp the output to prevent dying notes if the scan rate is 0. When scan rate is used, it's nice to have the sample actually stop when it reaches the end.
+	return scan_offset==0 ? std::clamp(final_grain_pos, m_sample.startFrame(), m_sample.endFrame() - grain_size) : final_grain_pos;
 }
 
 bool Granulator::addGrain( NotePlayHandle * _n, SampleFrame* _working_buffer, int grain_index, int grain_size, f_cnt_t grain_offset, float panning )
