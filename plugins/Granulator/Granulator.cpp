@@ -120,7 +120,7 @@ Granulator::Granulator( InstrumentTrack * _instrument_track ) :
 
 int Granulator::getNewGrainStartFrame( NotePlayHandle * _n )
 {
-	//int grain_size = std::max(1, static_cast<int>(m_grainSizeModel.value() * m_sample.sampleRate()));
+	int grain_size = std::max(1, static_cast<int>(m_grainSizeModel.value() * m_sample.sampleRate()));
 	// Max offset range goes from grainPos - spread/2 to grainPos + spread/2
 	// The spread knob probably be changed to be in terms of second; that would be more intuative.
 	int spread_frames = m_spreadModel.value() * (m_sample.endFrame() - m_sample.startFrame());
@@ -135,7 +135,7 @@ int Granulator::getNewGrainStartFrame( NotePlayHandle * _n )
 	int final_grain_pos = grain_position_frame + random_offset;
 	// Quantize the grain pos so that it lies on a multiple of the grain size (TODO: make this optional)
 	//final_grain_pos -= final_grain_pos % grain_size;
-	return final_grain_pos;
+	return std::clamp(final_grain_pos, m_sample.startFrame(), m_sample.endFrame() - grain_size);
 }
 
 bool Granulator::addGrain( NotePlayHandle * _n, SampleFrame* _working_buffer, int grain_index, int grain_size, f_cnt_t grain_offset, float panning )
