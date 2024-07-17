@@ -167,8 +167,8 @@ bool Granulator::addGrain( NotePlayHandle * _n, SampleFrame* _working_buffer, in
 	for (fpp_t f=0; f<frames; ++f){
 		float pos_in_grain = static_cast<float>((frames_since_press + f) % grain_size) / grain_size;
 		float amp = pos_in_grain < 0.5f? pos_in_grain : 1.0f - pos_in_grain;
-		float panLeft = std::min(1.0f, 1.0f - panning);
-		float panRight= std::min(1.0f, 1.0f + panning);
+		float panLeft = 1.0f - panning;
+		float panRight= 1.0f + panning;
 		_working_buffer[f] = SampleFrame( _working_buffer[f].left() * sqrt(amp) * panLeft, _working_buffer[f].right() * sqrt(amp) * panRight );
 	}
 	return success1 && success2;
