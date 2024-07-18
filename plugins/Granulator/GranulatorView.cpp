@@ -116,43 +116,43 @@ GranulatorView::GranulatorView(Instrument* instrument,
 
 	m_ampKnob = new Knob(KnobType::Bright26, this);
 	m_ampKnob->setVolumeKnob(true);
-	m_ampKnob->move(10, 138);
+	m_ampKnob->move(10, 138-3);
 	m_ampKnob->setHintText(tr("Amplify:"), "%");
 
 	m_grainSizeKnob = new TempoSyncKnob(KnobType::Bright26, this);
-	m_grainSizeKnob->move(10, 10);
+	m_grainSizeKnob->move(10, 10-4);
 	m_grainSizeKnob->setHintText(tr("Grain Size:"), "s");
 
 	m_grainPositionKnob = new Knob(KnobType::Bright26, this);
-	m_grainPositionKnob->move(45, 10);
+	m_grainPositionKnob->move(45, 10-4);
 	m_grainPositionKnob->setHintText(tr("Grain Position:"), "");
 
 	m_spreadKnob = new Knob(KnobType::Bright26, this);
-	m_spreadKnob->move(45, 45);
+	m_spreadKnob->move(45, 45-4);
 	m_spreadKnob->setHintText(tr("Spread:"), "");
 
 	m_numGrainsKnob = new Knob(KnobType::Bright26, this);
-	m_numGrainsKnob->move(10, 45);
+	m_numGrainsKnob->move(10, 45-4);
 	m_numGrainsKnob->setHintText(tr("Number of grains:"), "");
 
 	m_scanRateKnob = new Knob(KnobType::Bright26, this);
-	m_scanRateKnob->move(10, 80);
+	m_scanRateKnob->move(10, 80-4);
 	m_scanRateKnob->setHintText(tr("Scan Rate:"), "");
 
 	m_widthKnob = new Knob(KnobType::Bright26, this);
-	m_widthKnob->move(45, 80);
+	m_widthKnob->move(45, 80-4);
 	m_widthKnob->setHintText(tr("Width:"), "%");
 
 	m_startKnob = new GranulatorWaveView::knob(this);
-	m_startKnob->move(45, 138);
+	m_startKnob->move(45, 138-3);
 	m_startKnob->setHintText(tr("Start point:"), "");
 
 	m_endKnob = new GranulatorWaveView::knob(this);
-	m_endKnob->move(125, 138);
+	m_endKnob->move(125, 138-3);
 	m_endKnob->setHintText(tr("End point:"), "");
 
 	m_loopKnob = new GranulatorWaveView::knob(this);
-	m_loopKnob->move(85, 138);
+	m_loopKnob->move(85, 138-3);
 	m_loopKnob->setHintText(tr("Loopback point:"), "");
 
 // interpolation selector
