@@ -230,7 +230,7 @@ void Granulator::playNote( NotePlayHandle * _n,
 
 	if( ! _n->isFinished() )
 	{
-		int grain_size = std::max(1, static_cast<int>(m_grainSizeModel.value() * m_sample.sampleRate()));
+		int grain_size = std::max(1, static_cast<int>(m_grainSizeModel.value() * m_sample.sampleRate())) * (instrumentTrack()->baseFreq() / _n->frequency());
 
 		bool success = true;
 		int num_grains = m_numGrainsModel.value();
