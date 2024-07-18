@@ -291,6 +291,8 @@ void Granulator::saveSettings(QDomDocument& doc, QDomElement& elem)
 	m_grainPositionModel.saveSettings(doc, elem, "grainpos");
 	m_spreadModel.saveSettings(doc, elem, "spread");
 	m_numGrainsModel.saveSettings(doc, elem, "numgrains");
+	m_scanRateModel.saveSettings(doc, elem, "scanrate");
+	m_widthModel.saveSettings(doc, elem, "width");
 	m_loopPointModel.saveSettings(doc, elem, "lframe");
 	m_stutterModel.saveSettings(doc, elem, "stutter");
 	m_interpolationModel.saveSettings(doc, elem, "interp");
@@ -321,6 +323,8 @@ void Granulator::loadSettings(const QDomElement& elem)
 	m_grainSizeModel.loadSettings(elem, "grainsize");
 	m_grainPositionModel.loadSettings(elem, "grainpos");
 	m_spreadModel.loadSettings(elem, "spread");
+	m_scanRateModel.loadSettings(elem, "scanrate");
+	m_widthModel.loadSettings(elem, "width");
 	m_numGrainsModel.loadSettings(elem, "numgrains");
 
 	// compat code for not having a separate loopback point
