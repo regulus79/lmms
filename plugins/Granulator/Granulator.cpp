@@ -74,6 +74,7 @@ Granulator::Granulator( InstrumentTrack * _instrument_track ) :
 	m_numGrainsModel( 1, 1, 16, 1, this, tr( "Number of grains" ) ),
 	m_scanRateModel( 0, -10, 10, 0.0000001f, this, tr( "Scan rate" ) ),
 	m_widthModel( 0, 0, 100, 0.0000001f, this, tr( "Width" ) ),
+	m_directionModel( 1, -1, 1, 0.0000001f, this, tr( "Direction" ) ),
 	m_startPointModel( 0, 0, 1, 0.0000001f, this, tr( "Start of sample" ) ),
 	m_endPointModel( 1, 0, 1, 0.0000001f, this, tr( "End of sample" ) ),
 	m_loopPointModel( 0, 0, 1, 0.0000001f, this, tr( "Loopback point" ) ),
@@ -114,7 +115,7 @@ Granulator::Granulator( InstrumentTrack * _instrument_track ) :
 	pointChanged();
 }
 
-int Granulator::getNewGrainStartFrame( NotePlayHandle * _n )
+int Granulator::getNewGrainStartFrame( NotePlayHandle * _n, bool backwards )
 {
 	int grain_size = std::max(1, static_cast<int>(m_grainSizeModel.value() * m_sample.sampleRate()));
 	// Max offset range goes from grainPos - spread/2 to grainPos + spread/2
@@ -132,7 +133,7 @@ int Granulator::getNewGrainStartFrame( NotePlayHandle * _n )
 	// Quantize the grain pos so that it lies on a multiple of the grain size (TODO: make this optional)
 	//final_grain_pos -= final_grain_pos % grain_size;
 	// Only clamp the output to prevent dying notes if the scan rate is 0. When scan rate is used, it's nice to have the sample actually stop when it reaches the end.
-	return scan_offset==0 ? std::clamp(final_grain_pos, m_sample.startFrame(), m_sample.endFrame() - grain_size) : final_grain_pos;
+	return scan_offset==0 ? std::clamp(final_grain_pos, m_sample.startFrame() + (backwards ? grain_size : 0), m_sample.endFrame() - (backwards ? 0 : grain_size)) : final_grain_pos;
 }
 
 bool Granulator::addGrain( NotePlayHandle * _n, SampleFrame* _working_buffer, int grain_index, int grain_size, f_cnt_t grain_offset, float panning )
@@ -151,7 +152,11 @@ bool Granulator::addGrain( NotePlayHandle * _n, SampleFrame* _working_buffer, in
 	int frames_until_new_grain = grain_size - (frames_since_press % grain_size);
 	if (frames_until_new_grain<frames) {
 		// Time to pick new grain
-		static_cast<Sample::PlaybackState*>(_n->m_pluginData)[grain_index].setFrameIndex(getNewGrainStartFrame(_n));
+		// Set the direction based on the direction probability
+		bool backwards = (static_cast<float>(rand()) / RAND_MAX)*2 - 1 > m_directionModel.value() ? true : false;
+		static_cast<Sample::PlaybackState*>(_n->m_pluginData)[grain_index].setBackwards(backwards);
+		// Set the new position
+		static_cast<Sample::PlaybackState*>(_n->m_pluginData)[grain_index].setFrameIndex(getNewGrainStartFrame(_n, backwards));
 		// Fill the end of the buffer with the new section of sample.
 		// This is necessary to maintain the correct spacing of grains.
 		success2 = m_sample.play(_working_buffer + offset + frames_until_new_grain,
@@ -218,8 +223,9 @@ void Granulator::playNote( NotePlayHandle * _n,
 		Sample::PlaybackState* temp_array = new Sample::PlaybackState[16];
 		for (int g=0; g<16; ++g)
 		{
-			temp_array[g].setFrameIndex(getNewGrainStartFrame(_n));
-			temp_array[g].setBackwards(m_nextPlayBackwards);
+			bool backwards = (static_cast<float>(rand()) / RAND_MAX)*2 - 1 > m_directionModel.value() ? true : false;
+			temp_array[g].setBackwards(backwards);
+			temp_array[g].setFrameIndex(getNewGrainStartFrame(_n, backwards));
 		}
 		_n->m_pluginData = temp_array;
 	}

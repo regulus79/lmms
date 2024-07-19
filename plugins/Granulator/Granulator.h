@@ -44,7 +44,7 @@ class Granulator : public Instrument
 public:
 	Granulator( InstrumentTrack * _instrument_track );
 
-	int getNewGrainStartFrame( NotePlayHandle * _n );
+	int getNewGrainStartFrame( NotePlayHandle * _n, bool backwards );
 	bool addGrain( NotePlayHandle * _n, SampleFrame* _working_buffer, int grain_index, int grain_size, f_cnt_t grain_offset, float panning );
 
 	void playNote( NotePlayHandle * _n,
@@ -76,6 +76,7 @@ public:
 	FloatModel & numGrainsModel() { return m_numGrainsModel; }
 	FloatModel & scanRateModel() { return m_scanRateModel; }
 	FloatModel & widthModel() { return m_widthModel; }
+	FloatModel & directionModel() { return m_directionModel; }
 	FloatModel & startPointModel() { return m_startPointModel; }
 	FloatModel & endPointModel() { return m_endPointModel; }
 	FloatModel & loopPointModel() { return m_loopPointModel; }
@@ -116,6 +117,7 @@ private:
 	FloatModel m_numGrainsModel;
 	FloatModel m_scanRateModel;
 	FloatModel m_widthModel;
+	FloatModel m_directionModel;
 	FloatModel m_startPointModel;
 	FloatModel m_endPointModel;
 	FloatModel m_loopPointModel;

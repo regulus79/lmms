@@ -143,6 +143,10 @@ GranulatorView::GranulatorView(Instrument* instrument,
 	m_widthKnob->move(45, 80-4);
 	m_widthKnob->setHintText(tr("Width:"), "%");
 
+	m_directionKnob = new Knob(KnobType::Bright26, this);
+	m_directionKnob->move(90, 80-4);
+	m_directionKnob->setHintText(tr("Direction:"), "");
+
 	m_startKnob = new GranulatorWaveView::knob(this);
 	m_startKnob->move(45, 138-3);
 	m_startKnob->setHintText(tr("Start point:"), "");
@@ -300,6 +304,7 @@ void GranulatorView::modelChanged()
 	m_numGrainsKnob->setModel(&a->numGrainsModel());
 	m_scanRateKnob->setModel(&a->scanRateModel());
 	m_widthKnob->setModel(&a->widthModel());
+	m_directionKnob->setModel(&a->directionModel());
 	m_startKnob->setModel(&a->startPointModel());
 	m_endKnob->setModel(&a->endPointModel());
 	m_loopKnob->setModel(&a->loopPointModel());

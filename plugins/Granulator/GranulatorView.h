@@ -74,6 +74,7 @@ private:
 	Knob* m_numGrainsKnob;
 	Knob* m_scanRateKnob;
 	Knob* m_widthKnob;
+	Knob* m_directionKnob;
 	Knob* m_startKnob;
 	Knob* m_endKnob;
 	Knob* m_loopKnob;
