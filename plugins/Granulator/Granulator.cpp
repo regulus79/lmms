@@ -72,7 +72,7 @@ Granulator::Granulator( InstrumentTrack * _instrument_track ) :
 	m_grainPositionModel( 0, 0, 1, 0.0000001f, this, tr( "Grain start position" ) ),
 	m_spreadModel( 0, 0, 1, 0.0000001f, this, tr( "Spread" ) ),
 	m_numGrainsModel( 1, 1, 16, 1, this, tr( "Number of grains" ) ),
-	m_scanRateModel( 0, 0, 10, 0.0000001f, this, tr( "Scan rate" ) ),
+	m_scanRateModel( 0, -10, 10, 0.0000001f, this, tr( "Scan rate" ) ),
 	m_widthModel( 0, 0, 100, 0.0000001f, this, tr( "Width" ) ),
 	m_startPointModel( 0, 0, 1, 0.0000001f, this, tr( "Start of sample" ) ),
 	m_endPointModel( 1, 0, 1, 0.0000001f, this, tr( "End of sample" ) ),
