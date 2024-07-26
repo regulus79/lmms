@@ -222,7 +222,7 @@ void TimeLineWidget::paintEvent( QPaintEvent * )
 	}
 
 	// Only draw the position marker if the position line is in view
-	if (markerX(m_pos) >= m_xOffset && markerX(m_pos) < width() - m_posMarkerPixmap.width() / 2)
+	if (markerX(m_pos) >= m_xOffset && markerX(m_pos) < width() + m_posMarkerPixmap.width() / 2)
 	{
 		// Let the position marker extrude to the left
 		p.setClipping(false);
