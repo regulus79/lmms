@@ -34,6 +34,8 @@
 #include <QSlider>
 #include <QTimeLine>
 
+#include <QDebug>
+
 #include "ActionGroup.h"
 #include "AudioDevice.h"
 #include "AudioEngine.h"
@@ -777,10 +779,11 @@ void SongEditor::updatePosition( const TimePos & t )
 	}
 
 	const int x = m_timeLine->markerX(t);
-	if( x >= trackOpWidth + widgetWidth -1 )
+	const int right_scrollbar_width = contentWidget()->verticalScrollBar()->isVisible() ? contentWidget()->verticalScrollBar()->width() : 0;
+	if(x >= trackOpWidth + widgetWidth - 1 && x < width() - right_scrollbar_width)
 	{
 		m_positionLine->show();
-		m_positionLine->move( x-( m_positionLine->width() - 1 ), m_timeLine->height() );
+		m_positionLine->move(x - (m_positionLine->width() - 1), m_timeLine->height());
 	}
 	else
 	{
