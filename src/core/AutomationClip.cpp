@@ -353,8 +353,6 @@ void AutomationClip::removeNode(const TimePos & time)
 	}
 	generateTangents(it, 3);
 
-	updateLength();
-
 	emit dataChanged();
 }
 
