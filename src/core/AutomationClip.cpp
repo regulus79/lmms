@@ -36,6 +36,7 @@
 #include "Song.h"
 
 #include <cmath>
+#include <QDebug>
 
 namespace lmms
 {
@@ -352,8 +353,6 @@ void AutomationClip::removeNode(const TimePos & time)
 		--it;
 	}
 	generateTangents(it, 3);
-
-	updateLength();
 
 	emit dataChanged();
 }
