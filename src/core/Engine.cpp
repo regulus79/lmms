@@ -27,6 +27,7 @@
 #include "AudioEngine.h"
 #include "ConfigManager.h"
 #include "Mixer.h"
+#include "Multiplayer.h"
 #include "Ladspa2LMMS.h"
 #include "Lv2Manager.h"
 #include "PatternStore.h"
@@ -46,6 +47,7 @@ Mixer * Engine::s_mixer = nullptr;
 PatternStore * Engine::s_patternStore = nullptr;
 Song * Engine::s_song = nullptr;
 ProjectJournal * Engine::s_projectJournal = nullptr;
+Multiplayer * Engine::s_multiplayer = nullptr;
 #ifdef LMMS_HAVE_LV2
 Lv2Manager * Engine::s_lv2Manager = nullptr;
 #endif
@@ -67,6 +69,7 @@ void Engine::init( bool renderOnly )
 
 	emit engine->initProgress(tr("Initializing data structures"));
 	s_projectJournal = new ProjectJournal;
+	s_multiplayer = new Multiplayer;
 	s_audioEngine = new AudioEngine( renderOnly );
 	s_song = new Song;
 	s_mixer = new Mixer;
