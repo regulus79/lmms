@@ -23,6 +23,8 @@
  */
 
 #include <QDebug>
+#include <QTcpServer>
+#include <QTcpSocket>
 
 #include "Multiplayer.h"
 
@@ -39,7 +41,7 @@ Multiplayer::Multiplayer() :
 void Multiplayer::startServer(QHostAddress addr, int port)
 {
 	connect(m_server, SIGNAL(newConnection()), this, SLOT(newConnection()));
-	qDebug() << "Listening:" << m_tcpServer->listen(addr, port);
+	qDebug() << "Listening:" << m_server->listen(addr, port);
 }
 
 void Multiplayer::newConnection()
@@ -48,8 +50,8 @@ void Multiplayer::newConnection()
 	while (m_server->hasPendingConnections())
 	{
         QTcpSocket * clientConnection = m_server->nextPendingConnection();
-        connect(clientConnection, &AbtractSocket::disconnected, clientConnection, &QObject::deleteLater)
-		connect(clientConnection, &AbstractSocket::readyRead, this, &Multiplayer::readyRead);
+        connect(clientConnection, &QTcpSocket::disconnected, clientConnection, &QObject::deleteLater);
+		connect(clientConnection, &QTcpSocket::readyRead, this, &Multiplayer::readyRead);
     }
 }
 
@@ -67,7 +69,7 @@ void Multiplayer::readyRead()
 void Multiplayer::connectToServer(QHostAddress addr, int port)
 {
     m_client->abort();
-    m_client->connectToHost(addr, port)
+    m_client->connectToHost(addr, port);
 }
 
 void Multiplayer::sendProjectState()
