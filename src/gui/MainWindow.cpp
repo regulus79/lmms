@@ -50,6 +50,7 @@
 #include "InstrumentTrackView.h"
 #include "InstrumentTrackWindow.h"
 #include "MicrotunerConfig.h"
+#include "Multiplayer.h"
 #include "PatternEditor.h"
 #include "PianoRoll.h"
 #include "PianoView.h"
@@ -425,6 +426,13 @@ void MainWindow::finalize()
 	auto project_export = new ToolButton(
 		embed::getIconPixmap("project_export"), tr("Export current project"), this, SLOT(onExportProject()), m_toolBar);
 
+	auto start_server = new ToolButton(
+		embed::getIconPixmap("project_export"), tr("Start server 127.0.0.1 port 30000"), m_toolBar);
+	connect(start_server, &ToolButton::pressed, [=](){Engine::multiplayer()->startServer(QHostAddress("127.0.0.1"), 30000);});
+	auto start_client = new ToolButton(
+		embed::getIconPixmap("project_export"), tr("Connect client to 127.0.0.1 port 30000"), m_toolBar);
+	connect(start_client, &ToolButton::pressed, [=](){Engine::multiplayer()->connectToServer(QHostAddress("127.0.0.1"), 30000);});
+
 	m_metronomeToggle = new ToolButton(
 				embed::getIconPixmap( "metronome" ),
 				tr( "Metronome" ),
@@ -441,6 +449,8 @@ void MainWindow::finalize()
 	m_toolBarLayout->addWidget( project_save, 0, 5 );
 	m_toolBarLayout->addWidget( project_export, 0, 6 );
 	m_toolBarLayout->addWidget( m_metronomeToggle, 0, 7 );
+	m_toolBarLayout->addWidget( start_server, 0, 8 );
+	m_toolBarLayout->addWidget( start_client, 0, 9 );
 
 
 	// window-toolbar

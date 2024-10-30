@@ -32,10 +32,12 @@ namespace lmms
 {
 
 Multiplayer::Multiplayer() :
-    QObject()
+    QObject(),
+    m_server(new QTcpServer(this)),
+    m_client(new QTcpSocket(this))
 {
-    m_server = new QTcpServer(this);
     qDebug() << "Multiplayer class constructor!";
+    //startServer(QHostAddress("127.0.0.1"), 30000);
 }
 
 void Multiplayer::startServer(QHostAddress addr, int port)
@@ -68,8 +70,11 @@ void Multiplayer::readyRead()
 
 void Multiplayer::connectToServer(QHostAddress addr, int port)
 {
+    qDebug() << "Connecting to server";
+    dataStream.setDevice(m_client);
     m_client->abort();
     m_client->connectToHost(addr, port);
+    connect(m_client, &QTcpSocket::readyRead, this, &Multiplayer::readyRead);
 }
 
 void Multiplayer::sendProjectState()

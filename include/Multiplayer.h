@@ -25,6 +25,7 @@
 #ifndef LMMS_MULTIPLAYER_H
 #define LMMS_MULTIPLAYER_H
 
+#include <QDataStream>
 #include <QTcpServer>
 
 namespace lmms
@@ -49,6 +50,7 @@ private slots:
 private:
     QTcpServer * m_server;
     QTcpSocket * m_client;
+    QDataStream dataStream;
 };
 
 
