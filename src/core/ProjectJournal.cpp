@@ -208,6 +208,11 @@ void ProjectJournal::stopAllJournalling()
 	setJournalling(false);
 }
 
+const ProjectJournal::JoIdMap& ProjectJournal::getJoIdMap()
+{
+	return m_joIDs;
+}
+
 
 
 } // namespace lmms

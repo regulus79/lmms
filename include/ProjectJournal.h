@@ -43,6 +43,7 @@ class JournallingObject;
 class ProjectJournal
 {
 public:
+	using JoIdMap = QHash<jo_id_t, JournallingObject*>;
 	static const int MAX_UNDO_STATES;
 
 	ProjectJournal();
@@ -98,10 +99,9 @@ public:
 		return nullptr;
 	}
 
+	const JoIdMap& getJoIdMap();
 
 private:
-	using JoIdMap = QHash<jo_id_t, JournallingObject*>;
-
 	struct CheckPoint
 	{
 		CheckPoint( jo_id_t initID = 0, const DataFile& initData = DataFile( DataFile::Type::JournalData ) ) :
