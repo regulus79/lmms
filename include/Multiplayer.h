@@ -79,7 +79,7 @@ private:
 	//! adds this project's journalling data to `m_changeList`
 	void getChangedJournallingData();
 	//! adds new checkpoint to `m_changeList` if it doesn't exist or the time is more up to date
-	void addJournallingCheckPoint(jo_id_t id, DataFile& dataFile, std::time_t changeTime);
+	void addNetworkJournallingCheckPoint(jo_id_t id, DataFile& dataFile, std::time_t changeTime);
 
     //! used when lmms is a host
     QTcpServer * m_server;

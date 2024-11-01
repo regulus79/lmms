@@ -156,12 +156,12 @@ void Multiplayer::getChangedJournallingData()
 		{
 			DataFile curState(DataFile::Type::JournalData);
 			it->saveState(curState, curState.content());
-			addJournallingCheckPoint(it->id(), curState, changeTime);
+			addNetworkJournallingCheckPoint(it->id(), curState, changeTime);
 		}
 	}
 }
 
-void Multiplayer::addJournallingCheckPoint(jo_id_t id, DataFile& dataFile, std::time_t changeTime)
+void Multiplayer::addNetworkJournallingCheckPoint(jo_id_t id, DataFile& dataFile, std::time_t changeTime)
 {
 	auto it = m_changeList.find(id);
 	if (it != m_changeList.end())
