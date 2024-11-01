@@ -22,9 +22,13 @@
  *
  */
 
+#include "Multiplayer.h"
+
 #include <QTcpSocket>
 
-#include "Multiplayer.h"
+#include "Engine.h"
+#include "JournallingObject.h"
+#include "ProjectJournal.h"
 
 namespace lmms
 {
@@ -138,6 +142,42 @@ void Multiplayer::changeServerClientConfiguration(bool isClientNow)
 	else
 	{
 		if (m_server == nullptr) { new QTcpServer(this); }
+	}
+}
+
+void Multiplayer::getChangedJournallingData()
+{
+	ProjectJournal::JoIdMap journallingObjects = Engine::projectJournal()->getJoIdMap();
+	for (auto& it : journallingObjects)
+	{
+		std::time_t changeTime;
+		bool isChanged = it->isJournallingDataChanged(&changeTime);
+		if (isChanged)
+		{
+			DataFile curState(DataFile::Type::JournalData);
+			it->saveState(curState, curState.content());
+			addJournallingCheckPoint(it->id(), curState, changeTime);
+		}
+	}
+}
+
+void Multiplayer::addJournallingCheckPoint(jo_id_t id, DataFile& dataFile, std::time_t changeTime)
+{
+	auto it = m_changeList.find(id);
+	if (it != m_changeList.end())
+	{
+		// if found
+		if (it->second.changeTime < changeTime)
+		{
+			// if the new data is more up to date
+			it->second.changeTime = changeTime;
+			it->second.storedData = dataFile;
+		}
+	}
+	else
+	{
+		// if not found
+		m_changeList.insert(std::make_pair(id, NetworkJournallingCheckPoint(id, dataFile, changeTime)));
 	}
 }
 
