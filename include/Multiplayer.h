@@ -25,6 +25,8 @@
 #ifndef LMMS_MULTIPLAYER_H
 #define LMMS_MULTIPLAYER_H
 
+#include <vector>
+
 #include <QDataStream>
 #include <QTcpServer>
 
@@ -47,10 +49,21 @@ private slots:
     void newConnection();
     void readyRead();
 
+	void clientDisconnected();
 private:
+	//! changes between lmms being a server or a client
+	void changeServerClientConfiguration(bool isClientNow);
+
+    //! used when lmms is a host
     QTcpServer * m_server;
-    QTcpSocket * m_client;
-    QDataStream dataStream;
+    //! used if lmms is a client and connected to a host
+    QTcpSocket * m_thisClient;
+    //! used when lmms is a host, stores connected clients
+    std::vector<QTcpSocket*> m_connectedClients;
+    QDataStream m_dataStream;
+    
+    //! true if lmms is a client
+    bool m_isClient;
 };
 
 

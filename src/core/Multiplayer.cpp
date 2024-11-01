@@ -22,8 +22,6 @@
  *
  */
 
-#include <QDebug>
-#include <QTcpServer>
 #include <QTcpSocket>
 
 #include "Multiplayer.h"
@@ -32,16 +30,17 @@ namespace lmms
 {
 
 Multiplayer::Multiplayer() :
-    QObject(),
-    m_server(new QTcpServer(this)),
-    m_client(new QTcpSocket(this))
+	QObject(),
+	m_server(nullptr),
+	m_thisClient(nullptr)
 {
-    qDebug() << "Multiplayer class constructor!";
-    //startServer(QHostAddress("127.0.0.1"), 30000);
+	qDebug() << "Multiplayer class constructor!";
+	//startServer(QHostAddress("127.0.0.1"), 30000);
 }
 
 void Multiplayer::startServer(QHostAddress addr, int port)
 {
+	changeServerClientConfiguration(false);
 	connect(m_server, SIGNAL(newConnection()), this, SLOT(newConnection()));
 	qDebug() << "Listening:" << m_server->listen(addr, port);
 }
@@ -51,10 +50,14 @@ void Multiplayer::newConnection()
 	qDebug() << "newConnection";
 	while (m_server->hasPendingConnections())
 	{
-        QTcpSocket * clientConnection = m_server->nextPendingConnection();
-        connect(clientConnection, &QTcpSocket::disconnected, clientConnection, &QObject::deleteLater);
-		connect(clientConnection, &QTcpSocket::readyRead, this, &Multiplayer::readyRead);
-    }
+		QTcpSocket * clientConnection = m_server->nextPendingConnection();
+		if (clientConnection)
+		{
+			m_connectedClients.push_back(clientConnection);
+			connect(clientConnection, &QTcpSocket::disconnected, this, &Multiplayer::clientDisconnected);
+			connect(clientConnection, &QTcpSocket::readyRead, this, &Multiplayer::readyRead);
+		}
+	}
 }
 
 void Multiplayer::readyRead()
@@ -63,18 +66,37 @@ void Multiplayer::readyRead()
 	QByteArray * buffer = new QByteArray();
 	while (clientConnection->bytesAvailable() > 0)
 	{
-        buffer->append(clientConnection->readAll());
-    }
-    qDebug() << "Recieved:" << QString(*buffer);
+		buffer->append(clientConnection->readAll());
+	}
+	qDebug() << "Recieved:" << QString(*buffer);
+}
+
+void Multiplayer::clientDisconnected()
+{
+	QTcpSocket * clientConnection = static_cast<QTcpSocket*>(sender());
+	for (size_t i = 0; i < m_connectedClients.size(); i++)
+	{
+		if (m_connectedClients[i] == clientConnection)
+		{
+			// `m_server` owns the connected `QTcpSocket`s but they can be deleted from elsewhere to fee up memory
+			m_connectedClients[i]->deleteLater();
+			// swap with last element
+			m_connectedClients[i] = m_connectedClients[m_connectedClients.size() - 1];
+			m_connectedClients.pop_back();
+			break;
+		}
+	}
 }
 
 void Multiplayer::connectToServer(QHostAddress addr, int port)
 {
-    qDebug() << "Connecting to server";
-    dataStream.setDevice(m_client);
-    m_client->abort();
-    m_client->connectToHost(addr, port);
-    connect(m_client, &QTcpSocket::readyRead, this, &Multiplayer::readyRead);
+	changeServerClientConfiguration(true);
+	qDebug() << "Connecting to server";
+	m_dataStream.setDevice(m_thisClient);
+	// closting socket, reseting object
+	m_thisClient->abort();
+	m_thisClient->connectToHost(addr, port);
+	connect(m_thisClient, &QTcpSocket::readyRead, this, &Multiplayer::readyRead);
 }
 
 void Multiplayer::sendProjectState()
@@ -82,4 +104,41 @@ void Multiplayer::sendProjectState()
 
 }
 
+void Multiplayer::changeServerClientConfiguration(bool isClientNow)
+{
+	if (m_isClient != isClientNow)
+	{
+		if (isClientNow == true)
+		{
+			// if the server configuration is selected
+			if (m_thisClient != nullptr)
+			{
+				delete m_thisClient;
+				m_thisClient = nullptr;
+			}
+		}
+		else
+		{
+			// if the client configuration is selected
+			if (m_server != nullptr)
+			{
+				delete m_server;
+				m_server = nullptr;
+			}
+		}
+		m_isClient = isClientNow;
+	}
+
+	// making sure that the needed object isn't nullptr
+	// (for example after `this` is constructed)
+	if (m_isClient == true)
+	{
+		if (m_thisClient == nullptr) { new QTcpSocket(this); }
+	}
+	else
+	{
+		if (m_server == nullptr) { new QTcpServer(this); }
+	}
 }
+
+} // namespace lmms
