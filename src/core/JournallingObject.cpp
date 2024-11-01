@@ -37,8 +37,10 @@ JournallingObject::JournallingObject() :
 	SerializingObject(),
 	m_id( Engine::projectJournal()->allocID( this ) ),
 	m_journalling( true ),
+	m_isSaveStateChanged(false),
 	m_journallingStateStack()
 {
+	journallingDataChanged();
 }
 
 
@@ -91,6 +93,8 @@ void JournallingObject::restoreState( const QDomElement & _this )
 {
 	SerializingObject::restoreState( _this );
 
+	journallingDataChanged();
+
 	saveJournallingState( false );
 
 	// search for journal-node
@@ -112,6 +116,16 @@ void JournallingObject::restoreState( const QDomElement & _this )
 }
 
 
+bool JournallingObject::isJournallingDataChanged(std::time_t* lastChangeTime)
+{
+	if (m_isSaveStateChanged && lastChangeTime)
+	{
+		*lastChangeTime = m_lastChangeTime;
+	}
+	bool output = m_isSaveStateChanged;
+	m_isSaveStateChanged = false;
+	return output;
+}
 
 
 void JournallingObject::changeID( jo_id_t _id )
@@ -139,6 +153,12 @@ void JournallingObject::changeID( jo_id_t _id )
 		Engine::projectJournal()->reallocID( _id, this );
 		m_id = _id;
 	}
+}
+
+void JournallingObject::journallingDataChanged()
+{
+	m_isSaveStateChanged = true;
+	m_lastChangeTime = std::time(nullptr);
 }
 
 

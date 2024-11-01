@@ -25,6 +25,8 @@
 #ifndef LMMS_JOURNALLING_OBJECT_H
 #define LMMS_JOURNALLING_OBJECT_H
 
+#include <ctime>
+
 #include <QStack>
 
 #include "lmms_basics.h"
@@ -87,14 +89,29 @@ public:
 		return m_journallingStateStack.isEmpty();
 	}
 
+	//! returns `m_isSaveStateChanged` and sets `lastChangeTime` if `m_isSaveStateChanged` true
+	//! sets `m_isSaveStateChanged` to false after called
+	bool isJournallingDataChanged(std::time_t* lastChangeTime);
+
 protected:
 	void changeID( jo_id_t _id );
 
+	//! sets `m_isSaveStateChanged` true and updates m_lastChangeTime
+	//! "view" classes should never use this
+	void journallingDataChanged();
 
 private:
 	jo_id_t m_id;
 
 	bool m_journalling;
+	
+	//! true when data is changed that is:
+	//! 1. saved by the object
+	//! 2. doesn't inherit `JournallingObject`
+	bool m_isSaveStateChanged;
+	//! gets updated when m_isSaveStateChanged is set
+	std::time_t m_lastChangeTime;
+	
 
 	QStack<bool> m_journallingStateStack;
 
