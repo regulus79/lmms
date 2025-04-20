@@ -27,6 +27,7 @@
 
 
 #include "Knob.h"
+#include "SampleThumbnail.h"
 
 
 namespace lmms
@@ -118,6 +119,8 @@ private:
 	enum class DraggingType
 	{
 		Wave,
+		SlideWave,
+		ZoomWave,
 		SampleStart,
 		SampleEnd,
 		SampleLoop
@@ -125,23 +128,24 @@ private:
 
 	Sample const* m_sample;
 	QPixmap m_graph;
-	f_cnt_t m_from;
-	f_cnt_t m_to;
-	f_cnt_t m_last_from;
-	f_cnt_t m_last_to;
+	int m_from;
+	int m_to;
+	int m_last_from;
+	int m_last_to;
 	float m_last_amp;
 	knob* m_startKnob;
 	knob* m_endKnob;
 	knob* m_loopKnob;
-	f_cnt_t m_startFrameX;
-	f_cnt_t m_endFrameX;
-	f_cnt_t m_loopFrameX;
+	int m_startFrameX;
+	int m_endFrameX;
+	int m_loopFrameX;
 	bool m_isDragging;
 	QPoint m_draggingLastPoint;
 	DraggingType m_draggingType;
 	bool m_reversed;
 	f_cnt_t m_framesPlayed;
 	bool m_animation;
+	SampleThumbnail m_sampleThumbnail;
 
 	friend class GranulatorView;
 
@@ -158,8 +162,8 @@ private:
 	void zoom(const bool out = false);
 	void slide(int px);
 	void slideSamplePointByPx(Point point, int px);
-	void slideSamplePointByFrames(Point point, f_cnt_t frames, bool slide_to = false);
-	void slideSampleByFrames(f_cnt_t frames);
+	void slideSamplePointByFrames(Point point, long frameOffset, bool slideTo = false);
+	void slideSampleByFrames(long frameOffset);
 
 	void slideSamplePointToFrames(Point point, f_cnt_t frames)
 	{
