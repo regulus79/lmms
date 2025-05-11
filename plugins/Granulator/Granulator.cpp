@@ -242,10 +242,16 @@ void Granulator::playNote( NotePlayHandle * _n,
 			// Make every other grain be panned left vs right. Perhaps not the best way to do it, but for even number of grains it should work well.
 			float panning = g%2==0 ? m_widthModel.value()/100 : -m_widthModel.value()/100;
 			success = success && addGrain(_n, temporary_buffer, g, grain_size, static_cast<float>(g)/num_grains * grain_size, panning);
-			MixHelpers::add(_working_buffer, temporary_buffer, frames);
+			for (f_cnt_t f = 0; f < frames; ++f)
+			{
+				_working_buffer[f] += temporary_buffer[f];
+			}
 		}
 		// Normalize the volume of the output buffer. TODO: This doesn't sound right for some reason; I may be misunderstanding how volume works...?
-		MixHelpers::multiply(_working_buffer, 1.0f/sqrt(num_grains), frames);
+		for (f_cnt_t f = 0; f < frames; ++f)
+		{
+			_working_buffer[f] *= 1.0f/sqrt(num_grains);
+		}
 		
 		if (success)
 		{
