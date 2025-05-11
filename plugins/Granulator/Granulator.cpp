@@ -196,7 +196,7 @@ void Granulator::playNote( NotePlayHandle * _n,
 
 	if( !_n->m_pluginData )
 	{
-		if (m_stutterModel.value() == true && m_nextPlayStartPoint >= m_sample.endFrame())
+		if (m_stutterModel.value() == true && m_nextPlayStartPoint >= static_cast<f_cnt_t>(m_sample.endFrame()))
 		{
 			// Restart playing the note if in stutter mode, not in loop mode,
 			// and we're at the end of the sample.
@@ -204,7 +204,7 @@ void Granulator::playNote( NotePlayHandle * _n,
 			m_nextPlayBackwards = false;
 		}
 		// set interpolation mode for libsamplerate
-		int srcmode = SRC_LINEAR;
+		/*int srcmode = SRC_LINEAR;
 		switch( m_interpolationModel.value() )
 		{
 			case 0:
@@ -216,7 +216,7 @@ void Granulator::playNote( NotePlayHandle * _n,
 			case 2:
 				srcmode = SRC_SINC_MEDIUM_QUALITY;
 				break;
-		}
+		}*/
 		// Initialize the PlaybackStates, one for each grain
 		// Max grain number is 16
 		// NOTE: This is not optimal. Currently, no constructor is explicitly called for each of the PlaybackStates, meaning that `srcmode` is unused.
@@ -389,7 +389,7 @@ auto Granulator::beatLen(NotePlayHandle* note) const -> f_cnt_t
 		* Engine::audioEngine()->outputSampleRate()
 		/ Engine::audioEngine()->baseSampleRate();
 
-	const auto startFrame = m_nextPlayStartPoint >= m_sample.endFrame()
+	const auto startFrame = m_nextPlayStartPoint >= static_cast<f_cnt_t>(m_sample.endFrame())
 		? m_sample.startFrame()
 		: m_nextPlayStartPoint;
 	const auto duration = m_sample.endFrame() - startFrame;
