@@ -817,7 +817,6 @@ void PianoRoll::duplicateNotes(bool quanitized)
 		return stepCount * stepLength;
 	};
 
-
 	if (!hasValidMidiClip()) { return; }
 
 	const NoteVector selectedNotes = getSelectedNotes();
