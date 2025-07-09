@@ -50,15 +50,14 @@ class TrackContainerView;
 
 const int TRACK_OP_WIDTH = 78;
 
-const int DEFAULT_TRACK_WIDTH = 338;
-const int COMPACT_TRACK_WIDTH = 214;
-const int MINIMUM_TRACK_WIDTH = 168;
-
 
 class TrackView : public QWidget, public ModelView, public JournallingObject
 {
 	Q_OBJECT
 public:
+	/*! The width of the resize grip in pixels */
+	static constexpr int RESIZE_GRIP_WIDTH = 6;
+
 	TrackView( Track * _track, TrackContainerView* tcv );
 	~TrackView() override = default;
 
@@ -102,9 +101,6 @@ public:
 	// Create a menu for assigning/creating channels for this track
 	// Currently instrument track and sample track supports it
 	virtual QMenu * createMixerMenu(QString title, QString newMixerLabel);
-
-	/*! The width of the resize grip in pixels */
-	static constexpr int ResizeGripWidth = 6;
 
 
 public slots:

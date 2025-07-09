@@ -80,7 +80,7 @@ InstrumentTrackView::InstrumentTrackView( InstrumentTrack * _it, TrackContainerV
 
 	auto updateChannelNumberVisibility = [this]()
 	{
-		m_mixerChannelNumber->setVisible((getTrackOperationsWidget()->width() + getTrackSettingsWidget()->width()) >= COMPACT_TRACK_WIDTH);
+		m_mixerChannelNumber->setVisible(trackContainerView()->getTrackHeadWidth() >= TrackContainerView::COMPACT_TRACK_HEAD_WIDTH);
 	};
 
 	connect(tcv, &TrackContainerView::trackHeadWidthChanged, this, updateChannelNumberVisibility);
