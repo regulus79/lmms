@@ -53,9 +53,6 @@ public:
 
 	void removeViewsForPattern(int pattern);
 
-	void saveSettings(QDomDocument& doc, QDomElement& element) override;
-	void loadSettings(const QDomElement& element) override;
-
 	static constexpr const int MinPatternWidthPixels = 384;
 
 public slots:

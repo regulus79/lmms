@@ -139,7 +139,9 @@ TrackContainerView::~TrackContainerView()
 void TrackContainerView::saveSettings( QDomDocument & _doc,
 							QDomElement & _this )
 {
-	MainWindow::saveWidgetState( this, _this );
+	// Save window position of our parent widget, e.g. SongEditorWindow/PatternEditorWindow
+	if (parentWidget()) { MainWindow::saveWidgetState(parentWidget(), _this); }
+	_this.setAttribute("trackheadwidth", getTrackHeadWidth());
 }
 
 
@@ -147,9 +149,10 @@ void TrackContainerView::saveSettings( QDomDocument & _doc,
 
 void TrackContainerView::loadSettings( const QDomElement & _this )
 {
-	MainWindow::restoreWidgetState( this, _this );
+	// Restore window position of our parent widget, e.g. SongEditorWindow/PatternEditorWindow
+	if (parentWidget()) { MainWindow::restoreWidgetState(parentWidget(), _this); }
+	setTrackHeadWidth(_this.attribute("trackheadwidth", QString::number(getTrackHeadWidth())).toInt());
 }
-
 
 
 

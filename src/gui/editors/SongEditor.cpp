@@ -274,20 +274,6 @@ SongEditor::SongEditor( Song * song ) :
 
 
 
-void SongEditor::saveSettings( QDomDocument& doc, QDomElement& element )
-{
-	MainWindow::saveWidgetState( parentWidget(), element );
-	element.setAttribute("trackheadwidth", getTrackHeadWidth());
-}
-
-void SongEditor::loadSettings( const QDomElement& element )
-{
-	MainWindow::restoreWidgetState(parentWidget(), element);
-	setTrackHeadWidth(element.attribute("trackheadwidth", QString::number(getTrackHeadWidth())).toInt());
-}
-
-
-
 
 /*! \brief Return grid size as number of bars */
 float SongEditor::getSnapSize() const

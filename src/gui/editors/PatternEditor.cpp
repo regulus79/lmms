@@ -130,21 +130,6 @@ void PatternEditor::removeViewsForPattern(int pattern)
 
 
 
-void PatternEditor::saveSettings(QDomDocument& doc, QDomElement& element)
-{
-	MainWindow::saveWidgetState( parentWidget(), element );
-	element.setAttribute("trackheadwidth", getTrackHeadWidth());
-}
-
-void PatternEditor::loadSettings(const QDomElement& element)
-{
-	MainWindow::restoreWidgetState(parentWidget(), element);
-	setTrackHeadWidth(element.attribute("trackheadwidth", QString::number(getTrackHeadWidth())).toInt());
-	updateMaxSteps();
-}
-
-
-
 
 void PatternEditor::dropEvent(QDropEvent* de)
 {
