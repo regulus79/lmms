@@ -43,8 +43,8 @@ class DropToolBar;
 
 /// \brief Superclass for editors with a toolbar.
 ///
-/// Those editors include the Song Editor, the Automation Editor, B&B Editor,
-/// and the Piano Roll.
+/// Those editors include SongEditorWindow, AutomationEditorWindow, PatternEditorWindow,
+/// and PianoRollWindow.
 class Editor : public QMainWindow
 {
 	Q_OBJECT

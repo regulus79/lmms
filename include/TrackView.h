@@ -155,8 +155,11 @@ private:
 	Track * m_track;
 	TrackContainerView * m_trackContainerView;
 
+	// Widget that contains the menu, mute and solo buttons
 	TrackOperationsWidget m_trackOperationsWidget;
+	// Empty widget where each track class may add a label, FX channel, volume knobs, etc
 	QWidget m_trackSettingsWidget;
+	// Widget that is the timeline where ClipViews are placed
 	TrackContentWidget m_trackContentWidget;
 
 	Action m_action;
