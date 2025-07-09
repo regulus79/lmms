@@ -44,6 +44,8 @@ class PatternEditor : public TrackContainerView
 {
 	Q_OBJECT
 public:
+	static constexpr int MIN_PATTERN_WIDTH = 200;
+
 	PatternEditor(PatternStore* ps);
 
 	bool fixedClips() const override
@@ -52,11 +54,7 @@ public:
 	}
 
 	void removeViewsForPattern(int pattern);
-
-	void saveSettings(QDomDocument& doc, QDomElement& element) override;
-	void loadSettings(const QDomElement& element) override;
-
-	static constexpr const int MinPatternWidthPixels = 384;
+	void setTrackHeadWidth(int width) override;
 
 public slots:
 	void addSteps();
@@ -74,10 +72,17 @@ protected slots:
 	void updatePixelsPerBar();
 
 private:
+	//! This function only exists because the pattern editor cannot yet handle scrolling, so the track head cannot
+	//! extend too far or it will cause the clips to have 0 width.
+	//! Once proper scrolling and zooming is implemented, this can be removed.
+	int maxTrackHeadWidth() const;
+
 	PatternStore* m_ps;
 	TimeLineWidget* m_timeLine;
 	tick_t m_maxClipLength;
 	void makeSteps( bool clone );
+
+	int m_userTrackHeadWidth;
 };
 
 

@@ -31,7 +31,6 @@
 #include <QPainter>
 #include <QStyleOption>
 #include <QtGlobal>
-#include <QDebug>
 
 
 #include "AudioEngine.h"
@@ -67,6 +66,8 @@ TrackView::TrackView( Track * track, TrackContainerView * tcv ) :
 	m_trackOperationsWidget( this ),    /*!< Our trackOperationsWidget */
 	m_trackSettingsWidget( this ),      /*!< Our trackSettingsWidget */
 	m_trackContentWidget( this ),       /*!< Our trackContentWidget */
+	m_heightResizeLine(new TrackResizeLine(this, TrackView::Action::ResizeVertical, Qt::SizeVerCursor)),
+	m_widthResizeLine(new TrackResizeLine(this, TrackView::Action::ResizeHorizontal, Qt::SizeHorCursor)),
 	m_action( Action::None )                /*!< The action we're currently performing */
 {
 	setAutoFillBackground( true );
@@ -84,12 +85,12 @@ TrackView::TrackView( Track * track, TrackContainerView * tcv ) :
 	layout->addWidget( &m_trackContentWidget, 1 );
 	setFixedHeight( m_track->getHeight() );
 
+	m_heightResizeLine->raise();
+	m_widthResizeLine->raise();
+
 	resizeEvent( nullptr );
 
 	setAcceptDrops( true );
-	setMouseTracking(true);
-	m_trackSettingsWidget.setMouseTracking(true);
-	m_trackSettingsWidget.setMouseTracking(true);
 	setAttribute( Qt::WA_DeleteOnClose, true );
 
 
@@ -108,7 +109,7 @@ TrackView::TrackView( Track * track, TrackContainerView * tcv ) :
 	connect( &m_track->m_soloModel, SIGNAL(dataChanged()),
 			m_track, SLOT(toggleSolo()), Qt::DirectConnection );
 	
-	connect(m_trackContainerView, &TrackContainerView::trackHeadWidthChanged, this, &TrackView::updateWidth);
+	connect(m_trackContainerView, &TrackContainerView::trackHeadWidthChanged, this, &TrackView::updateTrackHeadWidth);
 
 	auto trackGrip = m_trackOperationsWidget.getTrackGrip();
 	connect(trackGrip, &TrackGrip::grabbed, this, &TrackView::onTrackGripGrabbed);
@@ -140,6 +141,9 @@ void TrackView::resizeEvent( QResizeEvent * re )
 	m_trackSettingsWidget.setFixedSize(m_trackContainerView->getTrackHeadWidth() - m_trackOperationsWidget.width(), height() - 1);
 
 	m_trackContentWidget.setFixedHeight(height());
+
+	m_heightResizeLine->setGeometry(0, height()-RESIZE_GRIP_WIDTH, width(), RESIZE_GRIP_WIDTH);
+	m_widthResizeLine->setGeometry(trackContainerView()->getTrackHeadWidth()-RESIZE_GRIP_WIDTH, 0, RESIZE_GRIP_WIDTH, height());
 }
 
 
@@ -243,63 +247,6 @@ void TrackView::dropEvent( QDropEvent * de )
 
 
 
-/*! \brief Handle a mouse press event on this track View.
- *
- *  If this track container supports rubber band selection, let the
- *  widget handle that and don't bother with any other handling.
- *
- *  If the left mouse button is pressed, we handle two things.  If
- *  SHIFT is pressed, then we resize vertically.  Otherwise we start
- *  the process of moving this track to a new position.
- *
- *  Otherwise we let the widget handle the mouse event as normal.
- *
- *  \param me the MouseEvent to handle.
- */
-void TrackView::mousePressEvent( QMouseEvent * me )
-{
-
-	// If previously dragged too small, restore on shift-leftclick
-	if( height() < DEFAULT_TRACK_HEIGHT &&
-		me->modifiers() & Qt::ShiftModifier &&
-		me->button() == Qt::LeftButton )
-	{
-		setFixedHeight( DEFAULT_TRACK_HEIGHT );
-		m_track->setHeight( DEFAULT_TRACK_HEIGHT );
-	}
-
-
-	int widgetTotal = m_trackContainerView->getTrackHeadWidth();
-
-	if( m_trackContainerView->allowRubberband() == true  && me->x() > widgetTotal )
-	{
-		QWidget::mousePressEvent( me );
-	}
-	else if( me->button() == Qt::LeftButton )
-	{
-		if (me->x() > widgetTotal - ResizeGripWidth && me->x() <= widgetTotal)
-		{
-			m_action = Action::ResizeHorizontal;
-		}
-		else if (me->modifiers() & Qt::ShiftModifier || (me->y() > height() - ResizeGripWidth && me->x() <= widgetTotal))
-		{
-			m_action = Action::ResizeVertical;
-			QCursor::setPos( mapToGlobal( QPoint( me->x(),
-								height() ) ) );
-			QCursor c( Qt::SizeVerCursor);
-			QApplication::setOverrideCursor( c );
-		}
-
-		me->accept();
-	}
-	else
-	{
-		QWidget::mousePressEvent( me );
-	}
-}
-
-
-
 
 /*! \brief Handle a mouse move event on this track View.
  *
@@ -319,9 +266,9 @@ void TrackView::mousePressEvent( QMouseEvent * me )
  */
 void TrackView::mouseMoveEvent( QMouseEvent * me )
 {
-	int widgetTotal = m_trackContainerView->getTrackHeadWidth();
+	int trackHeadWidth = m_trackContainerView->getTrackHeadWidth();
 
-	if( m_trackContainerView->allowRubberband() == true && me->x() > widgetTotal )
+	if (m_trackContainerView->allowRubberband() && me->x() > trackHeadWidth)
 	{
 		QWidget::mouseMoveEvent( me );
 	}
@@ -352,24 +299,10 @@ void TrackView::mouseMoveEvent( QMouseEvent * me )
 	else if (m_action == Action::ResizeVertical)
 	{
 		resizeToHeight(me->y());
-		setCursor(Qt::SizeVerCursor);
 	}
 	else if (m_action == Action::ResizeHorizontal)
 	{
 		m_trackContainerView->setTrackHeadWidth(me->x());
-		setCursor(Qt::SizeHorCursor);
-	}
-	else if (me->x() > widgetTotal - ResizeGripWidth && me->x() < widgetTotal)
-	{
-		setCursor(Qt::SizeHorCursor);
-	}
-	else if (me->y() > height() - ResizeGripWidth && me->x() < widgetTotal)
-	{
-		setCursor(Qt::SizeVerCursor);
-	}
-	else
-	{
-		setCursor(Qt::ArrowCursor);
 	}
 
 	if( height() < DEFAULT_TRACK_HEIGHT )
@@ -380,22 +313,6 @@ void TrackView::mouseMoveEvent( QMouseEvent * me )
 
 
 
-/*! \brief Handle a mouse release event on this track View.
- *
- *  \param me the MouseEvent to handle.
- */
-void TrackView::mouseReleaseEvent( QMouseEvent * me )
-{
-	m_action = Action::None;
-	while( QApplication::overrideCursor() != nullptr )
-	{
-		QApplication::restoreOverrideCursor();
-	}
-	m_trackOperationsWidget.update();
-	setCursor(Qt::ArrowCursor);
-
-	QWidget::mouseReleaseEvent( me );
-}
 
 void TrackView::wheelEvent(QWheelEvent* we)
 {
@@ -483,9 +400,40 @@ void TrackView::resizeToHeight(int h)
 	m_track->setHeight(height());
 }
 
-void TrackView::updateWidth(int width)
+void TrackView::updateTrackHeadWidth(int width)
 {
 	m_trackSettingsWidget.setFixedWidth(width - m_trackOperationsWidget.width());
+	m_widthResizeLine->move(trackContainerView()->getTrackHeadWidth(), 0);
 }
+
+
+
+
+TrackResizeLine::TrackResizeLine(TrackView* tv, TrackView::Action action, Qt::CursorShape cursor):
+	QWidget(tv),
+	m_trackView(tv),
+	m_action(action)
+{
+	setCursor(cursor);
+	setAttribute(Qt::WA_TranslucentBackground);
+	setAttribute(Qt::WA_TransparentForMouseEvents, false);
+}
+
+
+void TrackResizeLine::mousePressEvent(QMouseEvent *me)
+{
+	// TODO we should propagate right clicks and ctrl+drag to the TrackContentWidget
+	// instead of just silently ignoring it here
+	if (me->button() != Qt::LeftButton || me->modifiers()) { return; }
+
+	m_trackView->m_action = m_action;
+}
+
+void TrackResizeLine::mouseReleaseEvent(QMouseEvent *me)
+{
+	m_trackView->m_action = TrackView::Action::None;
+}
+
+
 
 } // namespace lmms::gui

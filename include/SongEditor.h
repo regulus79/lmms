@@ -67,9 +67,6 @@ public:
 	SongEditor( Song * song );
 	~SongEditor() override = default;
 
-	void saveSettings( QDomDocument& doc, QDomElement& element ) override;
-	void loadSettings( const QDomElement& element ) override;
-
 	ComboBoxModel *snappingModel() const;
 	float getSnapSize() const;
 	QString getSnapSizeString() const;

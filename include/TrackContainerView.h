@@ -71,6 +71,11 @@ class TrackContainerView : public QWidget, public ModelView,
 {
 	Q_OBJECT
 public:
+	// Track head (everything left of the timeline) width in pixels
+	static constexpr int DEFAULT_TRACK_HEAD_WIDTH = 338;
+	static constexpr int COMPACT_TRACK_HEAD_WIDTH = 214;
+	static constexpr int MIN_TRACK_HEAD_WIDTH = 168;
+
 	TrackContainerView( TrackContainer* tc );
 	~TrackContainerView() override;
 
@@ -141,12 +146,10 @@ public:
 	// -------------------------------------------------------
 
 	int getTrackHeadWidth() const { return m_trackHeadWidth; }
-	void setTrackHeadWidth(int width);
+	virtual void setTrackHeadWidth(int width);
 
-	//! This function only exists because the pattern editor cannot yet handle scrolling, so the track head cannot
-	//! extend too far or it will cause the clips to have 0 width.
-	//! Once proper scrolling and zooming is implemented, this can be removed.
-	void setMaxTrackHeadWidth(int maxWidth);
+	//! Default track head width, depending on user setting
+	static int userDefaultTrackHeadWidth();
 
 	void clearAllTracks();
 
@@ -205,9 +208,6 @@ private:
 	float m_ppb;
 
 	int m_trackHeadWidth;
-
-	//! This variable can be removed once the Pattern Editor supports scrolling.
-	int m_maxTrackHeadWidth = -1;
 
 	RubberBand * m_rubberBand;
 

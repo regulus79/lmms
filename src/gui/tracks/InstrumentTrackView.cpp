@@ -77,12 +77,14 @@ InstrumentTrackView::InstrumentTrackView( InstrumentTrack * _it, TrackContainerV
 			this, SLOT(handleConfigChange(QString,QString,QString)));
 
 	m_mixerChannelNumber = new MixerChannelLcdSpinBox(2, getTrackSettingsWidget(), tr("Mixer channel"), this);
-	m_mixerChannelNumber->show();
 
-	connect(trackContainerView(), &TrackContainerView::trackHeadWidthChanged, this, [this](int width){
-		if (width < COMPACT_TRACK_WIDTH) { m_mixerChannelNumber->hide(); }
-		else { m_mixerChannelNumber->show(); }
-	});
+	auto updateChannelNumberVisibility = [this]()
+	{
+		m_mixerChannelNumber->setVisible(trackContainerView()->getTrackHeadWidth() >= TrackContainerView::COMPACT_TRACK_HEAD_WIDTH);
+	};
+
+	connect(tcv, &TrackContainerView::trackHeadWidthChanged, this, updateChannelNumberVisibility);
+	updateChannelNumberVisibility();
 
 	m_volumeKnob = new Knob(KnobType::Small17, tr("VOL"), getTrackSettingsWidget(), Knob::LabelRendering::LegacyFixedFontSize, tr("VOL"));
 	m_volumeKnob->setVolumeKnob( true );

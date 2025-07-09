@@ -50,7 +50,8 @@ namespace lmms::gui
 PatternEditor::PatternEditor(PatternStore* ps) :
 	TrackContainerView(ps),
 	m_ps(ps),
-	m_maxClipLength(TimePos::ticksPerBar())
+	m_maxClipLength(TimePos::ticksPerBar()),
+	m_userTrackHeadWidth(userDefaultTrackHeadWidth())
 {
 	setModel(ps);
 
@@ -130,21 +131,6 @@ void PatternEditor::removeViewsForPattern(int pattern)
 
 
 
-void PatternEditor::saveSettings(QDomDocument& doc, QDomElement& element)
-{
-	MainWindow::saveWidgetState( parentWidget(), element );
-	element.setAttribute("trackheadwidth", getTrackHeadWidth());
-}
-
-void PatternEditor::loadSettings(const QDomElement& element)
-{
-	MainWindow::restoreWidgetState(parentWidget(), element);
-	setTrackHeadWidth(element.attribute("trackheadwidth", QString::number(getTrackHeadWidth())).toInt());
-	updateMaxSteps();
-}
-
-
-
 
 void PatternEditor::dropEvent(QDropEvent* de)
 {
@@ -190,7 +176,24 @@ void PatternEditor::dropEvent(QDropEvent* de)
 void PatternEditor::resizeEvent(QResizeEvent* re)
 {
 	updatePixelsPerBar();
-	setMaxTrackHeadWidth(width() - MinPatternWidthPixels - 2 * ClipView::BORDER_WIDTH);
+
+	// Decrease size of track head if it's too big to fit the pattern.
+	// Call TrackContainerView so m_userTrackHeadWidth doesn't change.
+	TrackContainerView::setTrackHeadWidth(std::min(m_userTrackHeadWidth, maxTrackHeadWidth()));
+}
+
+
+int PatternEditor::maxTrackHeadWidth() const
+{
+	return width() - MIN_PATTERN_WIDTH - 2 * ClipView::BORDER_WIDTH;
+}
+
+
+void PatternEditor::setTrackHeadWidth(int width)
+{
+	// Track head has been manually resized, save the value
+	m_userTrackHeadWidth = width;
+	TrackContainerView::setTrackHeadWidth(std::min(m_userTrackHeadWidth, maxTrackHeadWidth()));
 }
 
 
@@ -289,7 +292,7 @@ PatternEditorWindow::PatternEditorWindow(PatternStore* ps) :
 	connect(m_toolBar, SIGNAL(dragEntered(QDragEnterEvent*)), m_editor, SLOT(dragEnterEvent(QDragEnterEvent*)));
 	connect(m_toolBar, SIGNAL(dropped(QDropEvent*)), m_editor, SLOT(dropEvent(QDropEvent*)));
 
-	setMinimumWidth(MINIMUM_TRACK_WIDTH + 2 * ClipView::BORDER_WIDTH + PatternEditor::MinPatternWidthPixels);
+	setMinimumWidth(TrackContainerView::MIN_TRACK_HEAD_WIDTH + 2 * ClipView::BORDER_WIDTH + PatternEditor::MIN_PATTERN_WIDTH);
 
 	m_playAction->setToolTip(tr("Play/pause current pattern (Space)"));
 	m_stopAction->setToolTip(tr("Stop playback of current pattern (Space)"));
@@ -349,7 +352,7 @@ PatternEditorWindow::PatternEditorWindow(PatternStore* ps) :
 
 QSize PatternEditorWindow::sizeHint() const
 {
-	return {m_editor->getTrackHeadWidth() + 2 * ClipView::BORDER_WIDTH + PatternEditor::MinPatternWidthPixels, 300};
+	return {m_editor->getTrackHeadWidth() + 2 * ClipView::BORDER_WIDTH + PatternEditor::MIN_PATTERN_WIDTH, 300};
 }
 
 

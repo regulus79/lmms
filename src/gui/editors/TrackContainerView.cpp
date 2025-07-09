@@ -84,7 +84,7 @@ TrackContainerView::TrackContainerView( TrackContainer * _tc ) :
 	m_trackViews(),
 	m_scrollArea( new scrollArea( this ) ),
 	m_ppb( DEFAULT_PIXELS_PER_BAR ),
-	m_trackHeadWidth(ConfigManager::inst()->value("ui", "compacttrackbuttons").toInt() ? COMPACT_TRACK_WIDTH : DEFAULT_TRACK_WIDTH),
+	m_trackHeadWidth(userDefaultTrackHeadWidth()),
 	m_rubberBand( new RubberBand( m_scrollArea ) )
 {
 	m_tc->setHook( this );
@@ -139,7 +139,9 @@ TrackContainerView::~TrackContainerView()
 void TrackContainerView::saveSettings( QDomDocument & _doc,
 							QDomElement & _this )
 {
-	MainWindow::saveWidgetState( this, _this );
+	// Save window position of our parent widget, e.g. SongEditorWindow/PatternEditorWindow
+	if (parentWidget()) { MainWindow::saveWidgetState(parentWidget(), _this); }
+	_this.setAttribute("trackheadwidth", getTrackHeadWidth());
 }
 
 
@@ -147,9 +149,10 @@ void TrackContainerView::saveSettings( QDomDocument & _doc,
 
 void TrackContainerView::loadSettings( const QDomElement & _this )
 {
-	MainWindow::restoreWidgetState( this, _this );
+	// Restore window position of our parent widget, e.g. SongEditorWindow/PatternEditorWindow
+	if (parentWidget()) { MainWindow::restoreWidgetState(parentWidget(), _this); }
+	setTrackHeadWidth(_this.attribute("trackheadwidth", QString::number(userDefaultTrackHeadWidth())).toInt());
 }
-
 
 
 
@@ -355,17 +358,13 @@ void TrackContainerView::setPixelsPerBar( int ppb )
 
 void TrackContainerView::setTrackHeadWidth(int width)
 {
-	m_trackHeadWidth = m_maxTrackHeadWidth > 0
-		? std::clamp(width, MINIMUM_TRACK_WIDTH, m_maxTrackHeadWidth)
-		: std::max(width, MINIMUM_TRACK_WIDTH);
+	m_trackHeadWidth = std::max(width, MIN_TRACK_HEAD_WIDTH);
 	emit trackHeadWidthChanged(m_trackHeadWidth);
 }
 
-void TrackContainerView::setMaxTrackHeadWidth(int maxWidth)
+int TrackContainerView::userDefaultTrackHeadWidth()
 {
-	m_maxTrackHeadWidth = maxWidth;
-	// Update width
-	setTrackHeadWidth(m_trackHeadWidth);
+	return ConfigManager::inst()->value("ui", "compacttrackbuttons").toInt() ? COMPACT_TRACK_HEAD_WIDTH : DEFAULT_TRACK_HEAD_WIDTH;
 }
 
 
