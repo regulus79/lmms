@@ -46,6 +46,7 @@ namespace gui
 
 class FadeButton;
 class TrackContainerView;
+class TrackResizeLine;
 
 
 const int TRACK_OP_WIDTH = 78;
@@ -56,7 +57,7 @@ class TrackView : public QWidget, public ModelView, public JournallingObject
 	Q_OBJECT
 public:
 	/*! The width of the resize grip in pixels */
-	static constexpr int RESIZE_GRIP_WIDTH = 6;
+	static constexpr int RESIZE_GRIP_WIDTH = 4;
 
 	TrackView( Track * _track, TrackContainerView* tcv );
 	~TrackView() override = default;
@@ -129,9 +130,7 @@ protected:
 
 	void dragEnterEvent( QDragEnterEvent * dee ) override;
 	void dropEvent( QDropEvent * de ) override;
-	void mousePressEvent( QMouseEvent * me ) override;
 	void mouseMoveEvent( QMouseEvent * me ) override;
-	void mouseReleaseEvent( QMouseEvent * me ) override;
 	void wheelEvent(QWheelEvent* we) override;
 	void paintEvent( QPaintEvent * pe ) override;
 	void resizeEvent( QResizeEvent * re ) override;
@@ -157,6 +156,10 @@ private:
 	QWidget m_trackSettingsWidget;
 	// Widget that is the timeline where ClipViews are placed
 	TrackContentWidget m_trackContentWidget;
+	// Resize handle at the bottom of each track
+	TrackResizeLine* m_heightResizeLine;
+	// Resize handle to the right of track label and controls
+	TrackResizeLine* m_widthResizeLine;
 
 	Action m_action;
 
@@ -168,6 +171,7 @@ private:
 	void setIndicatorMute(FadeButton* indicator, bool muted);
 
 	friend class TrackLabelButton;
+	friend class TrackResizeLine;
 
 
 private slots:
@@ -175,8 +179,22 @@ private slots:
 	void muteChanged();
 	void onTrackGripGrabbed();
 	void onTrackGripReleased();
-	void updateWidth(int width);
+	void updateTrackHeadWidth(int width);
 } ;
+
+
+class TrackResizeLine : public QWidget
+{
+	Q_OBJECT
+public:
+	TrackResizeLine(TrackView* tv, TrackView::Action action, Qt::CursorShape cursor);
+protected:
+	void mousePressEvent(QMouseEvent* me) override;
+	void mouseReleaseEvent(QMouseEvent* me) override;
+private:
+	TrackView* m_trackView;
+	TrackView::Action m_action;
+};
 
 
 } // namespace gui

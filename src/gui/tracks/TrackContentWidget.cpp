@@ -77,7 +77,6 @@ TrackContentWidget::TrackContentWidget( TrackView * parent ) :
 	m_embossOffset(0)
 {
 	setAcceptDrops( true );
-	setMouseTracking(true);
 
 	connect( parent->trackContainerView(),
 			SIGNAL( positionChanged( const lmms::TimePos& ) ),
