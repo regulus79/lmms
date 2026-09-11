@@ -55,11 +55,10 @@ PatternEditor::PatternEditor(PatternStore* ps) :
 	setModel(ps);
 
 	m_timeLine = new TimeLineWidget(getTrackHeadWidth(), 32, pixelsPerBar(),
-		Engine::getSong()->getPlayPos(Song::PlayMode::Pattern),
 		Engine::getSong()->getTimeline(Song::PlayMode::Pattern),
-		m_currentPosition, Song::PlayMode::Pattern, this
+		m_currentPosition, this
 	);
-	connect(m_timeLine, &TimeLineWidget::positionChanged, this, &PatternEditor::updatePosition);
+	connect(m_timeLine->timeline(), &Timeline::positionChanged, this, &PatternEditor::updatePosition);
 	connect(this, &TrackContainerView::trackHeadWidthChanged, m_timeLine, [this](int width){ m_timeLine->setXOffset(width); updatePixelsPerBar(); });
 	static_cast<QVBoxLayout*>(layout())->insertWidget(0, m_timeLine);
 
@@ -201,7 +200,7 @@ void PatternEditor::updatePosition()
 	{
 		trackView->update();
 	}
-	emit positionChanged( m_currentPosition );
+	emit positionChanged(m_currentPosition);
 }
 
 void PatternEditor::updatePixelsPerBar()
@@ -219,11 +218,13 @@ void PatternEditor::updateMaxSteps()
 	m_maxClipLength = 0;
 	for (const auto& track : tl)
 	{
-		if (track->type() == Track::Type::Instrument)
+		auto clip = track->getClip(m_ps->currentPattern());
+		if (track->type() == Track::Type::Automation || track->type() == Track::Type::Sample)
 		{
-			auto mClip = static_cast<MidiClip*>(track->getClip(m_ps->currentPattern()));
-			m_maxClipLength = std::max(m_maxClipLength, static_cast<tick_t>(mClip->length()));
+			// The length of automation and sample clips is updated to match the pattern length.
+			clip->updateLength();
 		}
+		m_maxClipLength = std::max(m_maxClipLength, static_cast<tick_t>(clip->length()));
 	}
 	updatePixelsPerBar();
 }

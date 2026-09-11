@@ -69,7 +69,7 @@ public:
 	PatternStore();
 	~PatternStore() override = default;
 
-	virtual bool play(TimePos start, const fpp_t frames, const f_cnt_t frameBase, int clipNum = -1);
+	virtual bool play(TimePos start, const f_cnt_t frames, const f_cnt_t frameBase, int clipNum = -1);
 
 	void updateAfterTrackAdd() override;
 
@@ -98,7 +98,6 @@ public slots:
 	void play();
 	void stop();
 	void updateComboBox();
-	void currentPatternChanged();
 
 signals:
 	void trackUpdated();

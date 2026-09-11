@@ -32,6 +32,7 @@
 #include "AutomationClip.h"
 #include "Clipboard.h"
 #include "DataFile.h"
+#include "DeprecationHelper.h"
 #include "Engine.h"
 #include "GuiApplication.h"
 #include "PatternEditor.h"
@@ -46,21 +47,12 @@
 namespace lmms::gui
 {
 
-/*! Alternate between a darker and a lighter background color every 4 bars
- */
+//! @brief Alternate between a darker and a lighter background color every 4 bars
 const int BARS_PER_GROUP = 4;
-/* Lines between bars will disappear if zoomed too far out (i.e
-	if there are less than 4 pixels between lines)*/
+
+//! Lines between bars will disappear if zoomed too far out (i.e. if there are less than 4 pixels between lines)
 const int MIN_PIXELS_BETWEEN_LINES = 4;
 
-/*! \brief Create a new trackContentWidget
- *
- *  Creates a new track content widget for the given track.
- *  The content widget comprises the 'grip bar' and the 'tools' button
- *  for the track's context menu.
- *
- * \param parent The parent track.
- */
 TrackContentWidget::TrackContentWidget( TrackView * parent ) :
 	QWidget( parent ),
 	m_trackView( parent ),
@@ -78,10 +70,6 @@ TrackContentWidget::TrackContentWidget( TrackView * parent ) :
 {
 	setAcceptDrops( true );
 	setMouseTracking(true);
-
-	connect( parent->trackContainerView(),
-			SIGNAL( positionChanged( const lmms::TimePos& ) ),
-			this, SLOT( changePosition( const lmms::TimePos& ) ) );
 
 	// Update background if snap size changes
 	connect(getGUI()->songEditor()->m_editor->snappingModel(), &Model::dataChanged,
@@ -165,13 +153,6 @@ void TrackContentWidget::updateBackground()
 
 
 
-/*! \brief Adds a ClipView to this widget.
- *
- *  Adds a(nother) ClipView to our list of views.  We also
- *  check that our position is up-to-date.
- *
- * \param clipv The ClipView to add.
- */
 void TrackContentWidget::addClipView( ClipView * clipv )
 {
 	Clip * clip = clipv->getClip();
@@ -186,12 +167,6 @@ void TrackContentWidget::addClipView( ClipView * clipv )
 
 
 
-/*! \brief Removes the given ClipView from this widget.
- *
- *  Removes the given ClipView from our list of views.
- *
- * \param clipv The ClipView to add.
- */
 void TrackContentWidget::removeClipView( ClipView * clipv )
 {
 	clipViewVector::iterator it = std::find( m_clipViews.begin(),
@@ -207,9 +182,6 @@ void TrackContentWidget::removeClipView( ClipView * clipv )
 
 
 
-/*! \brief Update ourselves by updating all the ClipViews attached.
- *
- */
 void TrackContentWidget::update()
 {
 	for (const auto& clipView : m_clipViews)
@@ -223,12 +195,6 @@ void TrackContentWidget::update()
 
 
 
-// resposible for moving track-content-widgets to appropriate position after
-// change of visible viewport
-/*! \brief Move the trackContentWidget to a new place in time
- *
- * \param newPos The MIDI time to move to.
- */
 void TrackContentWidget::changePosition( const TimePos & newPos )
 {
 	if (m_trackView->trackContainerView() == getGUI()->patternEditor()->m_editor)
@@ -256,54 +222,29 @@ void TrackContentWidget::changePosition( const TimePos & newPos )
 		return;
 	}
 
-	TimePos pos = newPos;
-	if( pos < 0 )
-	{
-		pos = m_trackView->trackContainerView()->currentPosition();
-	}
-
-	const int begin = pos;
-	const int end = endPosition( pos );
+	const TimePos begin = newPos < 0 ? m_trackView->trackContainerView()->currentPosition() : newPos;
 	const float ppb = m_trackView->trackContainerView()->pixelsPerBar();
 
-	setUpdatesEnabled( false );
-	for (const auto& clipView : m_clipViews)
+	setUpdatesEnabled(false);
+	for (ClipView* clipView : m_clipViews)
 	{
 		Clip* clip = clipView->getClip();
 
-		clip->changeLength( clip->length() );
-
-		const int ts = clip->startPosition();
-		const int te = clip->endPosition()-3;
-		if( ( ts >= begin && ts <= end ) ||
-			( te >= begin && te <= end ) ||
-			( ts <= begin && te >= end ) )
+		const auto xPos = static_cast<int>((clip->startPosition() - begin) * ppb / TimePos::ticksPerBar());
+		clipView->move(xPos, clipView->y());
+		if (!clipView->isVisible())
 		{
-			clipView->move(static_cast<int>((ts - begin) * ppb / TimePos::ticksPerBar()), clipView->y());
-			if (!clipView->isVisible())
-			{
-				clipView->show();
-			}
-		}
-		else
-		{
-			clipView->move(-clipView->width() - 10, clipView->y());
+			clipView->show();
 		}
 	}
-	setUpdatesEnabled( true );
+	setUpdatesEnabled(true);
 
-	// redraw background
 	updateBackground();
-//	update();
 }
 
 
 
 
-/*! \brief Return the position of the trackContentWidget in bars.
- *
- * \param mouseX the mouse's current X position in pixels.
- */
 TimePos TrackContentWidget::getPosition( int mouseX )
 {
 	TrackContainerView * tv = m_trackView->trackContainerView();
@@ -316,13 +257,9 @@ TimePos TrackContentWidget::getPosition( int mouseX )
 
 
 
-/*! \brief Respond to a drag enter event on the trackContentWidget
- *
- * \param dee the Drag Enter Event to respond to
- */
 void TrackContentWidget::dragEnterEvent( QDragEnterEvent * dee )
 {
-	TimePos clipPos = getPosition( dee->pos().x() );
+	TimePos clipPos = getPosition(position(dee).x());
 	if( canPasteSelection( clipPos, dee ) == false )
 	{
 		dee->ignore();
@@ -337,11 +274,6 @@ void TrackContentWidget::dragEnterEvent( QDragEnterEvent * dee )
 
 
 
-/*! \brief Returns whether a selection of Clips can be pasted into this
- *
- * \param clipPos the position of the Clip slot being pasted on
- * \param de the DropEvent generated
- */
 bool TrackContentWidget::canPasteSelection( TimePos clipPos, const QDropEvent* de )
 {
 	const QMimeData * mimeData = de->mimeData();
@@ -353,7 +285,6 @@ bool TrackContentWidget::canPasteSelection( TimePos clipPos, const QDropEvent* d
 		: canPasteSelection( clipPos, mimeData, true );
 }
 
-// Overloaded method to make it possible to call this method without a Drag&Drop event
 bool TrackContentWidget::canPasteSelection( TimePos clipPos, const QMimeData* md , bool allowSameBar )
 {
 	// For decodeKey() and decodeValue()
@@ -432,11 +363,7 @@ bool TrackContentWidget::canPasteSelection( TimePos clipPos, const QMimeData* md
 	return true;
 }
 
-/*! \brief Pastes a selection of Clips onto the track
- *
- * \param clipPos the position of the Clip slot being pasted on
- * \param de the DropEvent generated
- */
+
 bool TrackContentWidget::pasteSelection( TimePos clipPos, QDropEvent * de )
 {
 	const QMimeData * mimeData = de->mimeData();
@@ -450,7 +377,7 @@ bool TrackContentWidget::pasteSelection( TimePos clipPos, QDropEvent * de )
 	return pasteSelection( clipPos, mimeData, true );
 }
 
-// Overloaded method so we can call it without a Drag&Drop event
+
 bool TrackContentWidget::pasteSelection( TimePos clipPos, const QMimeData * md, bool skipSafetyCheck )
 {
 	// For decodeKey() and decodeValue()
@@ -552,13 +479,11 @@ bool TrackContentWidget::pasteSelection( TimePos clipPos, const QMimeData * md, 
 }
 
 
-/*! \brief Respond to a drop event on the trackContentWidget
- *
- * \param de the Drop Event to respond to
- */
 void TrackContentWidget::dropEvent( QDropEvent * de )
 {
-	TimePos clipPos = TimePos( getPosition( de->pos().x() ) );
+	const auto pos = position(de);
+
+	TimePos clipPos = TimePos(getPosition(pos.x()));
 	if( pasteSelection( clipPos, de ) == true )
 	{
 		de->accept();
@@ -568,12 +493,10 @@ void TrackContentWidget::dropEvent( QDropEvent * de )
 
 
 
-/*! \brief Respond to a mouse press on the trackContentWidget
- *
- * \param me the mouse press event to respond to
- */
 void TrackContentWidget::mousePressEvent( QMouseEvent * me )
 {
+	const auto pos = position(me);
+
 	// Enable box select if control is held when clicking an empty space
 	// (If we had clicked a Clip it would have intercepted the mouse event)
 	if( me->modifiers() & Qt::ControlModifier ){
@@ -600,8 +523,8 @@ void TrackContentWidget::mousePressEvent( QMouseEvent * me )
 		}
 		getTrack()->addJournalCheckPoint();
 		const float snapSize = getGUI()->songEditor()->m_editor->getSnapSize();
-		const TimePos pos = TimePos(getPosition(me->x())).quantize(snapSize, true);
-		getTrack()->createClip(pos);
+		const TimePos timePos = TimePos(getPosition(pos.x())).quantize(snapSize, true);
+		getTrack()->createClip(timePos);
 	}
 }
 
@@ -617,10 +540,6 @@ void TrackContentWidget::mouseReleaseEvent( QMouseEvent * me )
 
 
 
-/*! \brief Repaint the trackContentWidget on command
- *
- * \param pe the Paint Event to respond to
- */
 void TrackContentWidget::paintEvent( QPaintEvent * pe )
 {
 	// Assume even-pixels-per-bar. Makes sense, should be like this anyways
@@ -638,13 +557,9 @@ void TrackContentWidget::paintEvent( QPaintEvent * pe )
 
 
 
-/*! \brief Updates the background tile pixmap on size changes.
- *
- * \param resizeEvent the resize event to pass to base class
- */
 void TrackContentWidget::resizeEvent( QResizeEvent * resizeEvent )
 {
-	// Update backgroud
+	// Update background
 	updateBackground();
 	// Force redraw
 	QWidget::resizeEvent( resizeEvent );
@@ -653,9 +568,6 @@ void TrackContentWidget::resizeEvent( QResizeEvent * resizeEvent )
 
 
 
-/*! \brief Return the track shown by the trackContentWidget
- *
- */
 Track * TrackContentWidget::getTrack()
 {
 	return m_trackView->getTrack();
@@ -664,10 +576,6 @@ Track * TrackContentWidget::getTrack()
 
 
 
-/*! \brief Return the end position of the trackContentWidget in Bars.
- *
- * \param posStart the starting position of the Widget (from getPosition())
- */
 TimePos TrackContentWidget::endPosition( const TimePos & posStart )
 {
 	const float ppb = m_trackView->trackContainerView()->pixelsPerBar();
@@ -717,95 +625,5 @@ void TrackContentWidget::contextMenuAction( QContextMenuEvent * cme, ContextMenu
 	}
 }
 
-
-
-// qproperty access methods
-//! \brief CSS theming qproperty access method
-QBrush TrackContentWidget::darkerColor() const
-{ return m_darkerColor; }
-
-//! \brief CSS theming qproperty access method
-QBrush TrackContentWidget::lighterColor() const
-{ return m_lighterColor; }
-
-//! \brief CSS theming qproperty access method
-QBrush TrackContentWidget::coarseGridColor() const
-{ return m_coarseGridColor; }
-
-//! \brief CSS theming qproperty access method
-QBrush TrackContentWidget::fineGridColor() const
-{ return m_fineGridColor; }
-
-//! \brief CSS theming qproperty access method
-QBrush TrackContentWidget::horizontalColor() const
-{ return m_horizontalColor; }
-
-//! \brief CSS theming qproperty access method
-QBrush TrackContentWidget::embossColor() const
-{ return m_embossColor; }
-
-//! \brief CSS theming qproperty access method
-int TrackContentWidget::coarseGridWidth() const
-{ return m_coarseGridWidth; }
-
-//! \brief CSS theming qproperty access method
-int TrackContentWidget::fineGridWidth() const
-{ return m_fineGridWidth; }
-
-//! \brief CSS theming qproperty access method
-int TrackContentWidget::horizontalWidth() const
-{ return m_horizontalWidth; }
-
-//! \brief CSS theming qproperty access method
-int TrackContentWidget::embossWidth() const
-{ return m_embossWidth; }
-
-//! \brief CSS theming qproperty access method
-int TrackContentWidget::embossOffset() const
-{ return m_embossOffset; }
-
-//! \brief CSS theming qproperty access method
-void TrackContentWidget::setDarkerColor( const QBrush & c )
-{ m_darkerColor = c; }
-
-//! \brief CSS theming qproperty access method
-void TrackContentWidget::setLighterColor( const QBrush & c )
-{ m_lighterColor = c; }
-
-//! \brief CSS theming qproperty access method
-void TrackContentWidget::setCoarseGridColor( const QBrush & c )
-{ m_coarseGridColor = c; }
-
-//! \brief CSS theming qproperty access method
-void TrackContentWidget::setFineGridColor( const QBrush & c )
-{ m_fineGridColor = c; }
-
-//! \brief CSS theming qproperty access method
-void TrackContentWidget::setHorizontalColor( const QBrush & c )
-{ m_horizontalColor = c; }
-
-//! \brief CSS theming qproperty access method
-void TrackContentWidget::setEmbossColor( const QBrush & c )
-{ m_embossColor = c; }
-
-//! \brief CSS theming qproperty access method
-void TrackContentWidget::setCoarseGridWidth(int c)
-{ m_coarseGridWidth = c; }
-
-//! \brief CSS theming qproperty access method
-void TrackContentWidget::setFineGridWidth(int c)
-{ m_fineGridWidth = c; }
-
-//! \brief CSS theming qproperty access method
-void TrackContentWidget::setHorizontalWidth(int c)
-{ m_horizontalWidth = c; }
-
-//! \brief CSS theming qproperty access method
-void TrackContentWidget::setEmbossWidth(int c)
-{ m_embossWidth = c; }
-
-//! \brief CSS theming qproperty access method
-void TrackContentWidget::setEmbossOffset(int c)
-{ m_embossOffset = c; }
 
 } // namespace lmms::gui
